@@ -6,150 +6,23 @@ cell surface marker prediction. It includes functions for:
 - Building penalty matrices based on tissue-cell relationships
 - Grid search optimization for penalty parameters
 - Computing objective scores and recommending markers
-- Saving results to CSV files
 """
 
-import csv
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 
 import numpy as np
-import pandas as pd
 
-
-# Known positive markers from literature (for validation)
-LITERATURE_POSITIVES = [
-    ["PECAM1", "lung", "endothelial cells", "LNP"],
-    ["VCAM1", "vascular", "endothelial cells", "LNP"],
-    ["CD4", "pbmc", "t-cells", "LNP"],
-    ["CD5", "pbmc", "t-cells", "LNP"],
-    ["CD19", "pbmc", "b-cells", "LNP"],
-    ["CD3", "pbmc", "t-cells", "LNP"],
-    ["NCR1", "pbmc", "nk-cells", "LNP"],
-    ["CD14", "pbmc", "macrophages", "LNP"],
-    ["MRC1", "pbmc", "macrophages", "LNP"],
-    ["ITGAM", "pbmc", "macrophages", ""],
-    ["CD28", "pbmc", "t-cells", "EDV"],
-    ["CD40", "pbmc", "b-cells", "lenti"],
-    ["ENG", "vascular", "endothelial cells", "LNP"],
-    ["MRC1", "pbmc", "dendritic cells", "LNP"],
-    ["CD8", "pbmc", "t-cells", "LNP"],
-    ["PDPN", "skin", "endothelial cells", "LNP"],
-    ["PLVAP", "lung", "endothelial cells", "LNP?"],
-    ["FCER2", "pbmc", "b-cells", ""],
-]
-
-
-def load_data_files(data_dir: str) -> Dict:
-    """
-    Load all required data files for controlled learning.
-    
-    Args:
-        data_dir: Directory containing the processed data files
-        
-    Returns:
-        Dictionary containing all loaded data
-    """
-    data_path = Path(data_dir)
-    
-    # Load tissue-cell pairs
-    with open(data_path / "tissue_cell_pairs.tsv", newline='') as file:
-        reader = csv.reader(file, delimiter='\t')
-        tissue_cells = list(reader)
-    tissue_cells = tissue_cells[1:]  # Remove header
-    
-    # Load common cells across tissues
-    with open(data_path / "common_cells_across_tissues.csv", newline='') as file:
-        reader = csv.reader(file, delimiter='\t')
-        common_cells = list(reader)
-    common_cells.append('serous glandular cells')
-    
-    # Load gene list
-    with open(data_path / "gene_list.csv", newline='') as file:
-        reader = csv.reader(file, delimiter='\t')
-        gene_list = list(reader)
-    
-    # Load nTPM matrices
-    nTPM_high_df = pd.read_csv(data_path / "gene_expression_matrix_high.csv", sep='\t')
-    nTPM_high_only = nTPM_high_df.drop(columns=["Tissue", "Cell type"])
-    nTPM_matrix_high = nTPM_high_only.values
-    
-    nTPM_median_df = pd.read_csv(data_path / "gene_expression_matrix_median.csv", sep='\t')
-    nTPM_median_only = nTPM_median_df.drop(columns=["Tissue", "Cell type"])
-    nTPM_matrix_median = nTPM_median_only.values
-    
-    return {
-        'tissue_cells': tissue_cells,
-        'common_cells': common_cells,
-        'gene_list': gene_list,
-        'nTPM_matrix_high': nTPM_matrix_high,
-        'nTPM_matrix_median': nTPM_matrix_median,
-        'nTPM_high_df': nTPM_high_df,
-        'nTPM_median_df': nTPM_median_df
-    }
-
-
-def load_labels(data_dir: str, gene_list: List, tissue_cells: List) -> Tuple[Dict, Dict]:
-    """
-    Load and index positive and negative labels.
-    
-    Args:
-        data_dir: Directory containing label files
-        gene_list: List of genes
-        tissue_cells: List of tissue-cell pairs
-        
-    Returns:
-        Tuple of (positives dict, negatives dict) with integer indices
-    """
-    data_path = Path(data_dir)
-    
-    # Flatten gene list if needed
-    if isinstance(gene_list[0], list):
-        gene_list = [gene[0] for gene in gene_list]
-    
-    # Create index mappings
-    tissue_cell_to_index = {tuple(row): idx for idx, row in enumerate(tissue_cells)}
-    gene_to_index = {gene: idx for idx, gene in enumerate(gene_list)}
-    
-    # Load positive labels
-    positives_df = pd.read_csv(data_path / "positives_labels.csv", sep='\t')
-    positives = {}
-    
-    for idx, row in positives_df.iterrows():
-        tissue = row["Tissue"]
-        cell_type = row["Cell type"]
-        gene_names = eval(row["Positive Gene Names"])
-        
-        key = (tissue, cell_type)
-        if key not in tissue_cell_to_index:
-            continue
-        
-        cell_idx = tissue_cell_to_index[key]
-        gene_indices = [gene_to_index[gene] for gene in gene_names if gene in gene_to_index]
-        
-        if gene_indices:
-            positives[cell_idx] = gene_indices
-    
-    # Load negative labels
-    negatives_df = pd.read_csv(data_path / "negative_labels.csv", sep='\t')
-    negatives = {}
-    
-    for idx, row in negatives_df.iterrows():
-        tissue = row["Tissue"]
-        cell_type = row["Cell type"]
-        gene_names = eval(row["Negative Gene Names"])
-        
-        key = (tissue, cell_type)
-        if key not in tissue_cell_to_index:
-            continue
-        
-        cell_idx = tissue_cell_to_index[key]
-        gene_indices = [gene_to_index[gene] for gene in gene_names if gene in gene_to_index]
-        
-        if gene_indices:
-            negatives[cell_idx] = gene_indices
-    
-    return positives, negatives
+from constants import LITERATURE_POSITIVES
+from io_utils import (
+    load_tissue_cells,
+    load_gene_list,
+    load_common_cells,
+    load_expression_matrices,
+    load_labels,
+    save_recommendations,
+    flatten_gene_list
+)
 
 
 def get_highly_expressed_genes(nTPM_matrix: np.ndarray, top_n: int = 50) -> List[int]:
@@ -274,12 +147,7 @@ def evaluate_parameters(
         - count4: Hits in highly expressed genes (to minimize)
     """
     objective_list = objective_matrix.tolist()
-    
-    # Flatten gene list if needed
-    if isinstance(gene_list[0], list):
-        gene_list_flat = [gene[0] for gene in gene_list]
-    else:
-        gene_list_flat = gene_list
+    gene_list_flat = flatten_gene_list(gene_list)
     
     # Count 1: Organ-wide markers (from databases)
     count1 = 0
@@ -433,12 +301,7 @@ def recommend_markers(
     Returns:
         Dictionary mapping "tissue cell" to list of recommended marker genes
     """
-    # Flatten gene list if needed
-    if isinstance(gene_list[0], list):
-        genes = [gene[0] for gene in gene_list]
-    else:
-        genes = gene_list
-    
+    genes = flatten_gene_list(gene_list)
     recommendations = {}
     
     for i, obj_row in enumerate(objective_matrix):
@@ -452,24 +315,6 @@ def recommend_markers(
     return recommendations
 
 
-def save_recommendations(
-    recommendations: Dict[str, List[str]],
-    output_path: str
-):
-    """
-    Save marker recommendations to CSV file.
-    
-    Args:
-        recommendations: Dictionary of recommendations
-        output_path: Output file path
-    """
-    with open(output_path, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(["cell", "markers"])
-        for cell, markers in recommendations.items():
-            writer.writerow([cell, markers])
-
-
 def run_controlled_learning(data_dir: str, output_dir: str) -> Dict:
     """
     Run the complete controlled learning pipeline.
@@ -481,20 +326,18 @@ def run_controlled_learning(data_dir: str, output_dir: str) -> Dict:
     Returns:
         Dictionary containing results
     """
+    data_path = Path(data_dir)
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
     
     print("=== Controlled Learning Pipeline ===\n")
     
-    # Load data
+    # Load data using shared utilities
     print("Loading data files...")
-    data = load_data_files(data_dir)
-    
-    tissue_cells = data['tissue_cells']
-    common_cells = data['common_cells']
-    gene_list = data['gene_list']
-    nTPM_matrix_high = data['nTPM_matrix_high']
-    nTPM_matrix_median = data['nTPM_matrix_median']
+    tissue_cells = load_tissue_cells(data_path / "tissue_cell_pairs.tsv")
+    common_cells = load_common_cells(data_path / "common_cells_across_tissues.csv")
+    gene_list = load_gene_list(data_path / "gene_list.csv")
+    nTPM_matrix_high, nTPM_matrix_median, _, _ = load_expression_matrices(data_dir)
     
     print(f"  Loaded {len(tissue_cells)} tissue-cell pairs")
     print(f"  Loaded {len(gene_list)} genes")
@@ -589,4 +432,3 @@ if __name__ == "__main__":
     
     args = parser.parse_args()
     run_controlled_learning(args.data_dir, args.output_dir)
-

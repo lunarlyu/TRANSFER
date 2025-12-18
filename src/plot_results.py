@@ -5,50 +5,17 @@ This module generates analysis plots and Excel reports from the
 marker prediction results. It includes:
 - Within-cell analysis: Expression rank of recommended markers
 - Across-cell analysis: Target/off-target expression ratios
-
 """
 
-import csv
 import ast
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
-def load_data(data_dir: str) -> Tuple[List, List, np.ndarray, np.ndarray]:
-    """
-    Load required data files for plotting.
-    
-    Args:
-        data_dir: Directory containing processed data files
-        
-    Returns:
-        Tuple of (tissue_cells, genes, nTPM_matrix_high, nTPM_matrix_median)
-    """
-    data_path = Path(data_dir)
-    
-    # Load tissue-cell pairs
-    with open(data_path / 'tissue_cell_pairs.tsv', newline='') as file:
-        reader = csv.reader(file, delimiter='\t')
-        tissue_cells = list(reader)
-    tissue_cells = tissue_cells[1:]  # Skip header
-    
-    # Load gene list
-    with open(data_path / 'gene_list.csv', newline='') as file:
-        reader = csv.reader(file, delimiter='\t')
-        genes = list(reader)
-    
-    # Load expression matrices
-    nTPM_high_df = pd.read_csv(data_path / 'gene_expression_matrix_high.csv', sep='\t')
-    nTPM_high = nTPM_high_df.drop(columns=["Tissue", "Cell type"]).values
-    
-    nTPM_median_df = pd.read_csv(data_path / 'gene_expression_matrix_median.csv', sep='\t')
-    nTPM_median = nTPM_median_df.drop(columns=["Tissue", "Cell type"]).values
-    
-    return tissue_cells, genes, nTPM_high, nTPM_median
+from io_utils import load_tissue_cells, load_gene_list, load_expression_matrices
 
 
 def within_cell_analysis(
@@ -427,10 +394,15 @@ def run_plotting(
     plots_path = Path(plots_dir)
     plots_path.mkdir(parents=True, exist_ok=True)
     
-    # Load data
+    # Load data using shared utilities
     if verbose:
         print("\nLoading data...")
-    tissue_cells, genes, nTPM_high, nTPM_median = load_data(data_dir)
+    
+    data_path = Path(data_dir)
+    tissue_cells = load_tissue_cells(data_path / "tissue_cell_pairs.tsv")
+    genes = load_gene_list(data_path / "gene_list.csv")
+    nTPM_high, nTPM_median, _, _ = load_expression_matrices(data_dir)
+    
     if verbose:
         print(f"  Loaded {len(tissue_cells)} tissue-cell pairs")
         print(f"  Loaded {len(genes)} genes")
@@ -485,18 +457,18 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--data-dir", 
-        default="outputs",
-        help="Directory containing processed data files (default: outputs)"
+        default="Results",
+        help="Directory containing processed data files (default: Results)"
     )
     parser.add_argument(
         "--output-dir",
-        default="outputs",
-        help="Directory containing marker recommendation files (default: outputs)"
+        default="Results",
+        help="Directory containing marker recommendation files (default: Results)"
     )
     parser.add_argument(
         "--plots-dir",
-        default="plots",
-        help="Directory to save plots and Excel files (default: plots)"
+        default="Plots",
+        help="Directory to save plots and Excel files (default: Plots)"
     )
     
     args = parser.parse_args()
@@ -506,4 +478,3 @@ if __name__ == "__main__":
         output_dir=args.output_dir,
         plots_dir=args.plots_dir
     )
-
