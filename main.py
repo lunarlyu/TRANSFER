@@ -15,7 +15,7 @@ Usage:
 Arguments:
     --data-dir       Directory containing input data (default: Data)
     --output-dir     Directory for output files (default: Results)
-    --plots-dir      Directory for plot outputs (default: plots)
+    --plots-dir      Directory for plot outputs (default: Plots)
     --skip-processing  Skip data processing step (use existing processed files)
     --skip-plots     Skip plot generation step
 """
@@ -71,8 +71,8 @@ Examples:
     
     parser.add_argument(
         "--plots-dir",
-        default="plots",
-        help="Directory for plot outputs (default: plots)"
+        default="Plots",
+        help="Directory for plot outputs (default: Plots)"
     )
     
     parser.add_argument(
