@@ -157,84 +157,42 @@ def build_expression_matrix_median(df_clean: pd.DataFrame) -> Tuple[pd.DataFrame
     return nTPM_matrix_df, gene_list, tissue_cells
 
 
-def load_marker_matches(file_path: str) -> Tuple[Dict, Set]:
+def load_and_get_cellmarker_genes(
+    match_file_path: str,
+    cellmarker_df: pd.DataFrame
+) -> Tuple[Dict[Tuple[str, str], List[str]], int, int]:
     """
-    Load cell marker name matches from CSV file.
+    Load CellMarker name matches and get marker genes.
     
-    The file format is a comma-separated file with two columns:
-    - Column 1: Protein Atlas cell (tissue, cell type) as string representation of tuple
-    - Column 2: Database cell (tissue, cell type) as string representation of tuple, or None
-    
-    The original notebook reads with tab delimiter to get each line as single element,
-    then parses as Python literal.
+    Matches the exact logic from DataProcessing.ipynb Cell 19.
     
     Args:
-        file_path: Path to the name match CSV file
+        match_file_path: Path to CellMarker_name_match.csv
+        cellmarker_df: CellMarker DataFrame
         
     Returns:
-        Tuple of (matched_cells dict, name_no_match set)
+        Tuple of (matched_cells dict with genes, match count, marker count)
     """
     matched_cells = {}
     name_no_match = set()
     
-    with open(file_path, 'r', encoding='utf-8') as file:
+    with open(match_file_path, 'r') as file:
         reader = csv.reader(file, delimiter='\t')
-        next(reader, None)  # Skip header
+        next(reader, None)
         for row in reader:
-            if not row:
-                continue
-            
-            # Replace curly quotes with straight quotes and remove backslashes
-            # Handle multiple types of curly quotes using unicode escape sequences only
-            cleaned = row[0]
-            # Left single quotation marks (U+2018, U+201B)
-            cleaned = cleaned.replace('\u2018', "'")
-            cleaned = cleaned.replace('\u201B', "'")
-            # Right single quotation marks (U+2019)
-            cleaned = cleaned.replace('\u2019', "'")
-            # Remove backslashes
-            cleaned = cleaned.replace('\\', '')
-            
-            try:
-                formatted = ast.literal_eval(cleaned)
-            except (SyntaxError, ValueError) as e:
-                # Skip malformed rows
-                continue
-            
-            # formatted should be a tuple of two string representations
-            if not isinstance(formatted, tuple) or len(formatted) < 2:
-                if isinstance(formatted, tuple) and len(formatted) == 1:
+            # Exact notebook logic: replace curly quotes and backslashes
+            cleaned = row[0].replace('\u2018', "'").replace('\u2019', "'").replace('\\', '')
+            formatted = ast.literal_eval(cleaned)
+            if len(formatted) > 1:
+                if formatted[1] == None:
                     name_no_match.add(formatted[0])
-                continue
-                
-            if formatted[1] is None or formatted[1] == 'None':
-                name_no_match.add(formatted[0])
+                else:
+                    matched_cells[formatted[0]] = ast.literal_eval(formatted[1])
             else:
-                try:
-                    # Parse the inner tuple string
-                    inner_tuple = ast.literal_eval(formatted[1])
-                    matched_cells[formatted[0]] = inner_tuple
-                except (SyntaxError, ValueError):
-                    name_no_match.add(formatted[0])
+                name_no_match.add(formatted[0])
     
-    return matched_cells, name_no_match
-
-
-def get_cellmarker_genes(
-    matched_cells: Dict,
-    cellmarker_df: pd.DataFrame
-) -> Dict[Tuple[str, str], List[str]]:
-    """
-    Get marker genes from CellMarker database.
-    
-    Args:
-        matched_cells: Dictionary mapping cell names to (tissue, cell) tuples
-        cellmarker_df: CellMarker DataFrame
-        
-    Returns:
-        Dictionary mapping (tissue, cell) to list of marker genes
-    """
-    result = {}
+    # Get genes for each matched cell (overwrites matched_cells with gene lists)
+    marker_count = 0
     for key in matched_cells:
         tissue, cell = matched_cells[key]
         genes = cellmarker_df[
@@ -242,27 +200,50 @@ def get_cellmarker_genes(
             (cellmarker_df['tissue_type'] == tissue) &
             (cellmarker_df['cell_name'] == cell)
         ]['Symbol'].tolist()
-        # Filter out NaN values
-        valid_genes = [g for g in genes if isinstance(g, str)]
-        result[key] = list(set(valid_genes))
-    return result
+        genes = list(set(genes))
+        marker_count += len(genes)
+        matched_cells[key] = genes
+    
+    return matched_cells, len(matched_cells), marker_count
 
 
-def get_panglao_genes(
-    matched_cells: Dict,
+def load_and_get_panglao_genes(
+    match_file_path: str,
     panglao_df: pd.DataFrame
-) -> Dict[Tuple[str, str], List[str]]:
+) -> Tuple[Dict[Tuple[str, str], List[str]], int, int]:
     """
-    Get marker genes from PanglaoDB database.
+    Load PanglaoDB name matches and get marker genes.
+    
+    Matches the exact logic from DataProcessing.ipynb Cell 19.
+    Note: CSV has leading spaces in some entries that cause ast.literal_eval to fail,
+    so we strip whitespace before parsing.
     
     Args:
-        matched_cells: Dictionary mapping cell names to (tissue, cell) tuples
+        match_file_path: Path to PanglaoDB_name_match.csv
         panglao_df: PanglaoDB DataFrame
         
     Returns:
-        Dictionary mapping (tissue, cell) to list of marker genes
+        Tuple of (matched_cells dict with genes, match count, marker count)
     """
-    result = {}
+    matched_cells = {}
+    name_no_match = set()
+    
+    with open(match_file_path, 'r') as file:
+        reader = csv.reader(file, delimiter='\t')
+        next(reader, None)
+        for row in reader:
+            # Exact notebook logic: replace curly quotes and backslashes
+            cleaned = row[0].replace('\u2018', "'").replace('\u2019', "'").replace('\\', '')
+            formatted = ast.literal_eval(cleaned)
+            if formatted[1] == None:
+                name_no_match.add(formatted[0])
+            else:
+                # Strip whitespace to handle leading spaces in the CSV
+                inner_str = formatted[1].strip() if isinstance(formatted[1], str) else formatted[1]
+                matched_cells[formatted[0]] = ast.literal_eval(inner_str)
+    
+    # Get genes for each matched cell (overwrites matched_cells with gene lists)
+    marker_count = 0
     for key in matched_cells:
         tissue, cell = matched_cells[key]
         genes = panglao_df[
@@ -270,42 +251,50 @@ def get_panglao_genes(
             (panglao_df['organ'] == tissue) &
             (panglao_df['cell type'] == cell)
         ]['official gene symbol'].tolist()
-        # Filter out NaN values
-        valid_genes = [g for g in genes if isinstance(g, str)]
-        result[key] = list(set(valid_genes))
-    return result
+        genes = list(set(genes))
+        marker_count += len(genes)
+        matched_cells[key] = genes
+    
+    return matched_cells, len(matched_cells), marker_count
 
 
 def combine_marker_databases(
-    cellmarker_genes: Dict,
-    panglao_genes: Dict
-) -> Dict[Tuple[str, str], List[str]]:
+    cellmarker_genes: Dict[Tuple[str, str], List[str]],
+    panglao_genes: Dict[Tuple[str, str], List[str]]
+) -> Tuple[Dict[Tuple[str, str], List[str]], int]:
     """
     Combine markers from CellMarker and PanglaoDB databases.
     
+    Matches the exact logic from DataProcessing.ipynb Cell 19.
+    
     Args:
-        cellmarker_genes: Markers from CellMarker
-        panglao_genes: Markers from PanglaoDB
+        cellmarker_genes: Markers from CellMarker (matched_cells1)
+        panglao_genes: Markers from PanglaoDB (matched_cells2)
         
     Returns:
-        Combined dictionary of markers
+        Tuple of (combined markers dict, total marker count)
     """
+    total_count = 0
     markers = {}
     
-    # First add all Panglao markers
-    for key, genes in panglao_genes.items():
+    # First iterate through PanglaoDB (matched_cells2)
+    for key in panglao_genes:
         if key in cellmarker_genes:
-            combined = list(set(cellmarker_genes[key] + genes))
+            genes = cellmarker_genes[key] + panglao_genes[key]
+            genes = list(set(genes))
         else:
-            combined = genes
-        markers[key] = combined
+            genes = panglao_genes[key]
+        markers[key] = genes
+        total_count += len(genes)
     
-    # Then add CellMarker markers not in Panglao
-    for key, genes in cellmarker_genes.items():
+    # Then add CellMarker entries not in PanglaoDB
+    for key in cellmarker_genes:
         if key not in markers:
+            genes = cellmarker_genes[key]
             markers[key] = genes
+            total_count += len(genes)
     
-    return markers
+    return markers, total_count
 
 
 def build_positive_labels(
@@ -316,6 +305,8 @@ def build_positive_labels(
     """
     Build positive labels dictionary from marker databases.
     
+    Matches the exact logic from DataProcessing.ipynb Cell 21.
+    
     Args:
         markers: Combined marker dictionary
         gene_list: List of valid genes in the dataset
@@ -325,16 +316,15 @@ def build_positive_labels(
         Dictionary mapping (tissue, cell) to list of positive marker genes
     """
     positives = {}
-    gene_set = set(gene_list)
     
     for key, genes in markers.items():
         tissue, cell = key
         
         # Filter to genes that exist in our gene list
-        positive_genes = [gene for gene in genes if gene in gene_set]
+        positive_genes = [gene for gene in genes if gene in gene_list]
         
         if not positive_genes:
-            continue
+            continue  # Skip if no matching genes
         
         # Handle immune cell subtypes
         if cell in IMMUNE_SUBTYPES:
@@ -444,16 +434,20 @@ def run_data_processing(data_dir: str, output_dir: str) -> Dict:
     cellmarker_df = pd.read_excel(data_path / "Cell_marker_Human.xlsx")
     panglao_df = pd.read_csv(data_path / "PanglaoDB_markers_27_Mar_2020.tsv", delimiter='\t')
     
-    # Load marker matches
-    cellmarker_matches, _ = load_marker_matches(data_path / "CellMarker_name_match.csv")
-    panglao_matches, _ = load_marker_matches(data_path / "PanglaoDB_name_match.csv")
+    # Load marker matches and get genes (matching notebook Cell 19)
+    cellmarker_genes, cm_match_count, cm_marker_count = load_and_get_cellmarker_genes(
+        data_path / "CellMarker_name_match.csv", cellmarker_df
+    )
+    panglao_genes, pg_match_count, pg_marker_count = load_and_get_panglao_genes(
+        data_path / "PanglaoDB_name_match.csv", panglao_df
+    )
     
-    # Get markers from databases
-    cellmarker_genes = get_cellmarker_genes(cellmarker_matches, cellmarker_df)
-    panglao_genes = get_panglao_genes(panglao_matches, panglao_df)
+    print(f"  CellMarker: {cm_match_count} cells matched, {cm_marker_count} markers")
+    print(f"  PanglaoDB: {pg_match_count} cells matched, {pg_marker_count} markers")
     
-    # Combine markers
-    markers = combine_marker_databases(cellmarker_genes, panglao_genes)
+    # Combine markers (matching notebook Cell 19)
+    markers, total_markers = combine_marker_databases(cellmarker_genes, panglao_genes)
+    print(f"  Combined: {len(markers)} cells, {total_markers} markers")
     
     # Build labels
     print("\nBuilding positive and negative labels...")
