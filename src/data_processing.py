@@ -223,6 +223,13 @@ def load_marker_matches(file_path: str) -> Tuple[Dict, Set]:
     """
     Load cell marker name matches from CSV file.
     
+    The file format is a comma-separated file with two columns:
+    - Column 1: Protein Atlas cell (tissue, cell type) as string representation of tuple
+    - Column 2: Database cell (tissue, cell type) as string representation of tuple, or None
+    
+    The original notebook reads with tab delimiter to get each line as single element,
+    then parses as Python literal.
+    
     Args:
         file_path: Path to the name match CSV file
         
@@ -232,20 +239,45 @@ def load_marker_matches(file_path: str) -> Tuple[Dict, Set]:
     matched_cells = {}
     name_no_match = set()
     
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r', encoding='utf-8') as file:
         reader = csv.reader(file, delimiter='\t')
         next(reader, None)  # Skip header
         for row in reader:
-            formatted = ast.literal_eval(
-                row[0].replace(''', "'").replace(''', "'").replace('\\', '')
-            )
-            if len(formatted) > 1:
-                if formatted[1] is None:
+            if not row:
+                continue
+            
+            # Replace curly quotes with straight quotes and remove backslashes
+            # Handle multiple types of curly quotes using unicode escape sequences only
+            cleaned = row[0]
+            # Left single quotation marks (U+2018, U+201B)
+            cleaned = cleaned.replace('\u2018', "'")
+            cleaned = cleaned.replace('\u201B', "'")
+            # Right single quotation marks (U+2019)
+            cleaned = cleaned.replace('\u2019', "'")
+            # Remove backslashes
+            cleaned = cleaned.replace('\\', '')
+            
+            try:
+                formatted = ast.literal_eval(cleaned)
+            except (SyntaxError, ValueError) as e:
+                # Skip malformed rows
+                continue
+            
+            # formatted should be a tuple of two string representations
+            if not isinstance(formatted, tuple) or len(formatted) < 2:
+                if isinstance(formatted, tuple) and len(formatted) == 1:
                     name_no_match.add(formatted[0])
-                else:
-                    matched_cells[formatted[0]] = ast.literal_eval(formatted[1])
-            else:
+                continue
+                
+            if formatted[1] is None or formatted[1] == 'None':
                 name_no_match.add(formatted[0])
+            else:
+                try:
+                    # Parse the inner tuple string
+                    inner_tuple = ast.literal_eval(formatted[1])
+                    matched_cells[formatted[0]] = inner_tuple
+                except (SyntaxError, ValueError):
+                    name_no_match.add(formatted[0])
     
     return matched_cells, name_no_match
 
