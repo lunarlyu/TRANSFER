@@ -10,12 +10,14 @@ The pipeline consists of two main stages:
 2. Controlled Learning: Optimize penalty parameters and predict markers
 
 Usage:
-    python main.py [--data-dir DATA_DIR] [--output-dir OUTPUT_DIR] [--skip-processing]
+    python main.py [--data-dir DATA_DIR] [--output-dir OUTPUT_DIR] [--skip-processing] [--skip-plots]
 
 Arguments:
     --data-dir       Directory containing input data (default: current directory)
     --output-dir     Directory for output files (default: current directory)
+    --plots-dir      Directory for plot outputs (default: plots)
     --skip-processing  Skip data processing step (use existing processed files)
+    --skip-plots     Skip plot generation step
 """
 
 import argparse
@@ -27,6 +29,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from data_processing import run_data_processing
 from controlled_learning import run_controlled_learning
+from plot_results import run_plotting
 
 
 def main():
@@ -66,17 +69,31 @@ Examples:
         help="Skip data processing step and use existing processed files"
     )
     
+    parser.add_argument(
+        "--plots-dir",
+        default="plots",
+        help="Directory for plot outputs (default: plots)"
+    )
+    
+    parser.add_argument(
+        "--skip-plots",
+        action="store_true",
+        help="Skip plot generation step"
+    )
+    
     args = parser.parse_args()
     
     # Resolve paths
     data_dir = Path(args.data_dir).resolve()
     output_dir = Path(args.output_dir).resolve()
+    plots_dir = Path(args.plots_dir).resolve()
     
     print("=" * 60)
     print("  Cell Surface Marker Prediction Pipeline")
     print("=" * 60)
     print(f"\nData directory: {data_dir}")
     print(f"Output directory: {output_dir}")
+    print(f"Plots directory: {plots_dir}")
     print()
     
     # Validate data directory
@@ -153,6 +170,27 @@ Examples:
         traceback.print_exc()
         sys.exit(1)
     
+    # Step 3: Generate Plots
+    if not args.skip_plots:
+        print("\n" + "=" * 60)
+        print("  STEP 3: Generate Plots and Analysis")
+        print("=" * 60 + "\n")
+        
+        try:
+            run_plotting(
+                data_dir=str(output_dir),
+                output_dir=str(output_dir),
+                plots_dir=str(plots_dir)
+            )
+            print(f"Plot generation completed successfully.")
+        except Exception as e:
+            print(f"ERROR in plot generation: {e}")
+            import traceback
+            traceback.print_exc()
+            # Don't exit - plots are optional
+    else:
+        print("\n[Skipping plot generation]\n")
+    
     # Summary
     print("\n" + "=" * 60)
     print("  Pipeline Complete")
@@ -177,6 +215,15 @@ Examples:
             print(f"  ✓ {f} ({size:.1f} KB)")
         else:
             print(f"  ✗ {f} (not created)")
+    
+    # List plot files if generated
+    if not args.skip_plots and plots_dir.exists():
+        print(f"\nPlot files (in {plots_dir.name}/):")
+        plot_files = list(plots_dir.glob("*"))
+        for f in sorted(plot_files):
+            if f.is_file():
+                size = f.stat().st_size / 1024
+                print(f"  ✓ {f.name} ({size:.1f} KB)")
     
     print("\n" + "=" * 60)
     print("  Results Summary")
