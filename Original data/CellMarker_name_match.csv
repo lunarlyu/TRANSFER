@@ -1,0 +1,59 @@
+Protein Atlas,CellMarker
+"('skin', 'macrophages')","('Skin', 'Macrophage')"
+"('endometrium', 'macrophages')","('Endometrium', 'Macrophage')"
+"('placenta', 'fibroblasts')",None
+"('prostate', 'fibroblasts')","('Prostate', 'Fibroblast')"
+"('liver', 'hepatocytes')","('Liver', 'Hepatocyte')"
+"('brain', 'astrocytes')","('Brain', 'Astrocyte')"
+"('tongue', 'macrophages')",None
+"('adipose tissue', 'fibroblasts')","('Adipose tissue', 'Fibroblast')"
+"('pbmc', 'monocytes')","('Blood', ‘Monocyte')"
+"('fallopian tube', 'neutrophils')",None
+"('spleen', 'macrophages')","('Spleen', 'Macrophage')"
+"('breast', 'fibroblasts')","('Breast', ‘Fibroblast')"
+"('bronchus', 'ionocytes')","('Airway', 'Ionocyte')"
+"('thymus', 'macrophages')","('Thymus', 'Macrophage')"
+"('heart muscle', 'cardiomyocytes')","('Heart', 'Cardiomyocyte')"
+"('stomach', 'fibroblasts')","('Stomach', 'Fibroblast')"
+"('liver', 'cholangiocytes')","('Liver', 'Cholangiocyte')"
+"('adipose tissue', 'macrophages')","('Adipose tissue', 'Macrophage')"
+"('liver', 'fibroblasts')","('Liver', 'Fibroblast')"
+"('testis', 'spermatocytes')",
+"('vascular', 'macrophages')","('Blood vessel', 'Macrophage')"
+"('bone marrow', 'macrophages')","('Bone marrow', 'Macrophage')"
+"('pancreas', 'macrophages')","('Pancreas', 'Macrophage')"
+"('lung', 'fibroblasts')","('Lung', 'Fibroblast')"
+"('testis', 'spermatogonia')","('Testis', 'Adult spermatogonia')"
+"('adipose tissue', 'adipocytes')","('Adipose tissue', 'Adipocyte')"
+"('breast', 'macrophages')","('Breast', 'Macrophage')"
+"('pancreas', 'fibroblasts')","('Pancreas', 'Fibroblast')"
+"('breast', 'adipocytes')",None
+"('esophagus', 'fibroblasts')","('Esophagus', ‘Fibroblast')"
+"('fallopian tube', 'granulocytes')",None
+"('vascular', 'fibroblasts')","('Blood vessel', 'Fibroblast')"
+"('testis', 'macrophages')","('Testis', 'Macrophage')"
+"('adipose tissue', 'monocytes')","('Adipose tissue', 'Monocyte')"
+"('tongue', 'granulocytes')",None
+"('lung', 'macrophages')","('Lung', 'Macrophage')"
+"('placenta', 'syncytiotrophoblasts')","('Placenta', 'Syncytiotrophoblast')"
+"('thymus', 'fibroblasts')","('Thymus', 'Fibroblast')"
+"('lung', 'granulocytes')","('Lung', 'Granulocyte')"
+"('fallopian tube', 'macrophages')",None
+"('kidney', 'macrophages')","('Kidney', 'Macrophage')"
+"('pbmc', 'platelets')","('Blood', 'Platelet')"
+"('pbmc', 'macrophages')","(‘Blood', 'Macrophage')"
+"('skeletal muscle', 'macrophages')","('Skeletal muscle', 'Macrophage')"
+"('skin', 'melanocytes')","('Skin', 'Melanocyte')"
+"('salivary gland', 'fibroblasts')","('Salivary gland', 'Fibroblast')"
+"('prostate', 'macrophages')","('Prostate', 'Macrophage')"
+"('salivary gland', 'macrophages')","('Salivary gland', 'Macrophage')"
+"('placenta', 'cytotrophoblasts')","('Placenta', ‘Cytotrophoblast')"
+"('brain', 'oligodendrocytes')","('Brain', 'Oligodendrocyte')"
+"('skin', 'fibroblasts')","('Skin', 'Fibroblast')"
+"('stomach', 'macrophages')","('Stomach', 'Macrophage')"
+"('heart muscle', 'fibroblasts')","('Heart', ‘Fibroblast')"
+"('skin', 'granulocytes')",None
+"('fallopian tube', 'fibroblasts')",None
+"('skeletal muscle', 'fibroblasts')","('Skeletal muscle', 'Fibroblast')"
+"('esophagus', 'macrophages')","('Esophagus', 'Macrophage')"
+"('ovary', 'oocytes')","('Ovary', 'Oocyte')"
