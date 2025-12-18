@@ -1,0 +1,155 @@
+Tissue	Cell type
+adipose tissue	adipocytes
+adipose tissue	fibroblasts
+adipose tissue	schwann cells
+adipose tissue	smooth muscle cells
+bone marrow	erythroid cells
+brain	astrocytes
+brain	excitatory neurons
+brain	inhibitory neurons
+brain	microglial cells
+brain	oligodendrocyte precursor cells
+brain	oligodendrocytes
+breast	adipocytes
+breast	breast glandular cells
+breast	breast myoepithelial cells
+breast	endothelial cells
+breast	fibroblasts
+breast	smooth muscle cells
+bronchus	basal respiratory cells
+bronchus	ciliated cells
+bronchus	club cells
+bronchus	ionocytes
+bronchus	smooth muscle cells
+colon	distal enterocytes
+colon	enteroendocrine cells
+colon	intestinal goblet cells
+colon	paneth cells
+colon	undifferentiated cells
+endometrium	ciliated cells
+endometrium	endometrial stromal cells
+endometrium	endothelial cells
+endometrium	glandular and luminal cells
+endometrium	smooth muscle cells
+esophagus	basal squamous epithelial cells
+esophagus	endothelial cells
+esophagus	fibroblasts
+esophagus	schwann cells
+esophagus	smooth muscle cells
+esophagus	squamous epithelial cells
+eye	bipolar cells
+eye	cone photoreceptor cells
+eye	horizontal cells
+eye	muller glia cells
+eye	rod photoreceptor cells
+fallopian tube	ciliated cells
+fallopian tube	endothelial cells
+fallopian tube	fibroblasts
+fallopian tube	lymphatic endothelial cells
+fallopian tube	neutrophils
+fallopian tube	secretory cells
+fallopian tube	smooth muscle cells
+heart muscle	cardiomyocytes
+heart muscle	endothelial cells
+heart muscle	fibroblasts
+heart muscle	smooth muscle cells
+immune	b-cells
+immune	dendritic cells
+immune	granulocytes
+immune	macrophages
+immune	monocytes
+immune	nk-cells
+immune	plasma cells
+immune	t-cells
+kidney	collecting duct cells
+kidney	distal tubular cells
+kidney	proximal tubular cells
+liver	cholangiocytes
+liver	endothelial cells
+liver	erythroid cells
+liver	fibroblasts
+liver	hepatocytes
+liver	kupffer cells
+liver	smooth muscle cells
+lung	alveolar cells type 1
+lung	alveolar cells type 2
+lung	ciliated cells
+lung	club cells
+lung	endothelial cells
+lung	fibroblasts
+lung	smooth muscle cells
+ovary	endothelial cells
+ovary	granulosa cells
+ovary	lymphatic endothelial cells
+ovary	oocytes
+ovary	ovarian stromal cells
+ovary	smooth muscle cells
+pancreas	ductal cells
+pancreas	endothelial cells
+pancreas	exocrine glandular cells
+pancreas	fibroblasts
+pancreas	pancreatic endocrine cells
+pbmc	platelets
+placenta	cytotrophoblasts
+placenta	endothelial cells
+placenta	extravillous trophoblasts
+placenta	fibroblasts
+placenta	hofbauer cells
+placenta	smooth muscle cells
+placenta	syncytiotrophoblasts
+prostate	basal prostatic cells
+prostate	club cells
+prostate	endothelial cells
+prostate	fibroblasts
+prostate	prostatic glandular cells
+prostate	smooth muscle cells
+rectum	distal enterocytes
+rectum	enteroendocrine cells
+rectum	intestinal goblet cells
+rectum	paneth cells
+rectum	undifferentiated cells
+salivary gland	endothelial cells
+salivary gland	fibroblasts
+salivary gland	mucus glandular cells
+salivary gland	salivary duct cells
+salivary gland	serous glandular cells
+salivary gland	smooth muscle cells
+skeletal muscle	endothelial cells
+skeletal muscle	fibroblasts
+skeletal muscle	skeletal myocytes
+skeletal muscle	smooth muscle cells
+skin	basal keratinocytes
+skin	endothelial cells
+skin	fibroblasts
+skin	langerhans cells
+skin	melanocytes
+skin	smooth muscle cells
+skin	suprabasal keratinocytes
+small intestine	enteroendocrine cells
+small intestine	intestinal goblet cells
+small intestine	paneth cells
+small intestine	proximal enterocytes
+small intestine	undifferentiated cells
+stomach	fibroblasts
+stomach	gastric mucus-secreting cells
+testis	early spermatids
+testis	endothelial cells
+testis	late spermatids
+testis	leydig cells
+testis	peritubular cells
+testis	sertoli cells
+testis	spermatocytes
+testis	spermatogonia
+thymus	endothelial cells
+thymus	fibroblasts
+thymus	mesothelial cells
+thymus	smooth muscle cells
+tongue	basal keratinocytes
+tongue	endothelial cells
+tongue	serous glandular cells
+tongue	smooth muscle cells
+tongue	suprabasal keratinocytes
+vascular	endothelial cells
+vascular	fibroblasts
+vascular	schwann cells
+vascular	smooth muscle cells

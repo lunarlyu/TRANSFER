@@ -210,7 +210,9 @@ def save_recommendations(
     with open(output_path, 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["cell", "markers"])
-        for cell, markers in recommendations.items():
+        # Sort by cell name for deterministic output order
+        for cell in sorted(recommendations.keys()):
+            markers = recommendations[cell]
             writer.writerow([cell, markers])
 
 

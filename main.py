@@ -24,12 +24,10 @@ import argparse
 import sys
 from pathlib import Path
 
-# Add src directory to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-from data_processing import run_data_processing
-from controlled_learning import run_controlled_learning
-from plot_results import run_plotting
+# Import from src package
+from src.data_processing import run_data_processing
+from src.controlled_learning import run_controlled_learning
+from src.plot_results import run_plotting
 
 
 def main():

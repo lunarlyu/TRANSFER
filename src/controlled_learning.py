@@ -13,8 +13,8 @@ from typing import Dict, List, Tuple
 
 import numpy as np
 
-from constants import LITERATURE_POSITIVES
-from io_utils import (
+from .constants import LITERATURE_POSITIVES
+from .io_utils import (
     load_tissue_cells,
     load_gene_list,
     load_common_cells,
@@ -232,7 +232,7 @@ def grid_search_parameters(
         Tuple of (optimal_params, all_results_dict)
     """
     results = {}
-    best_score = 0
+    best_score = float('-inf')
     best_params = None
     
     p_values = np.linspace(p_range[0], p_range[1], p_range[2])
@@ -268,6 +268,8 @@ def grid_search_parameters(
                 
                 results[(p, q, r)] = (count1, count2, count3, count4)
                 
+                # Use >= for deterministic tie-breaking (first found with best score wins)
+                # Since we iterate in fixed order, this ensures reproducibility
                 if score > best_score:
                     best_score = score
                     best_params = (p, q, r)
@@ -305,7 +307,11 @@ def recommend_markers(
     recommendations = {}
     
     for i, obj_row in enumerate(objective_matrix):
-        top_markers = sorted(enumerate(obj_row), key=lambda x: x[1], reverse=True)[:top_k]
+        # Sort by objective value (descending), then by gene name (ascending) for deterministic ties
+        top_markers = sorted(
+            enumerate(obj_row),
+            key=lambda x: (-x[1], genes[x[0]])  # -value for descending, gene name for tie-breaking
+        )[:top_k]
         marker_indices = [idx for idx, _ in top_markers]
         marker_names = [genes[idx] for idx in marker_indices]
         

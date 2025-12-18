@@ -19,8 +19,8 @@ from typing import Dict, List, Set, Tuple
 import numpy as np
 import pandas as pd
 
-from constants import IMMUNE_SUBTYPES, NON_MEMBRANE_GENES
-from io_utils import load_surface_proteins, save_labels_to_csv
+from .constants import IMMUNE_SUBTYPES, NON_MEMBRANE_GENES
+from .io_utils import load_surface_proteins, save_labels_to_csv
 
 
 def clean_expression_data(
@@ -107,10 +107,14 @@ def build_expression_matrix_high(df_clean: pd.DataFrame) -> Tuple[pd.DataFrame, 
     # Build nTPM matrix
     nTPM_matrix_df = (
         df_high
-        .pivot_table(index=["Tissue", "Cell type"], columns="Gene name", values="nTPM", fill_value=0)
+        .pivot_table(index=["Tissue", "Cell type"], columns="Gene name", values="nTPM", fill_value=0.0)
         .reindex(columns=gene_list)
         .reset_index()
     )
+    
+    # Ensure all values are floats (not integers) for consistent output format
+    for col in gene_list:
+        nTPM_matrix_df[col] = nTPM_matrix_df[col].astype(float)
     
     return nTPM_matrix_df, gene_list, tissue_cells
 
@@ -141,10 +145,14 @@ def build_expression_matrix_median(df_clean: pd.DataFrame) -> Tuple[pd.DataFrame
     # Build nTPM matrix
     nTPM_matrix_df = (
         df_median
-        .pivot_table(index=["Tissue", "Cell type"], columns="Gene name", values="nTPM", fill_value=0)
+        .pivot_table(index=["Tissue", "Cell type"], columns="Gene name", values="nTPM", fill_value=0.0)
         .reindex(columns=gene_list)
         .reset_index()
     )
+    
+    # Ensure all values are floats (not integers) for consistent output format
+    for col in gene_list:
+        nTPM_matrix_df[col] = nTPM_matrix_df[col].astype(float)
     
     return nTPM_matrix_df, gene_list, tissue_cells
 
@@ -234,7 +242,9 @@ def get_cellmarker_genes(
             (cellmarker_df['tissue_type'] == tissue) &
             (cellmarker_df['cell_name'] == cell)
         ]['Symbol'].tolist()
-        result[key] = list(set(genes))
+        # Filter out NaN values
+        valid_genes = [g for g in genes if isinstance(g, str)]
+        result[key] = list(set(valid_genes))
     return result
 
 
@@ -260,7 +270,9 @@ def get_panglao_genes(
             (panglao_df['organ'] == tissue) &
             (panglao_df['cell type'] == cell)
         ]['official gene symbol'].tolist()
-        result[key] = list(set(genes))
+        # Filter out NaN values
+        valid_genes = [g for g in genes if isinstance(g, str)]
+        result[key] = list(set(valid_genes))
     return result
 
 

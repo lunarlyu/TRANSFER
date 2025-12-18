@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from io_utils import load_tissue_cells, load_gene_list, load_expression_matrices
+from .io_utils import load_tissue_cells, load_gene_list, load_expression_matrices
 
 
 def within_cell_analysis(
