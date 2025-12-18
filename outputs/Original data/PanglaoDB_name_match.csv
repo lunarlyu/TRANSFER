@@ -1,0 +1,230 @@
+Protein Atlas,PanglaoDB
+"('lung', 'endothelial cells')",None
+"('pbmc', 't-cells')","('Immune system', 'T cells')"
+"('lymph node', 'mixed cell types')",None
+"('small intestine', 'intestinal goblet cells')","('GI tract', 'Goblet cells')"
+"('eye', 'horizontal cells')",None
+"('rectum', 'paneth cells')","('GI tract', 'Paneth cells')"
+"('liver', 'b-cells')",None
+"('rectum', 'mixed immune cells')",None
+"('skin', 'macrophages')",None
+"('stomach', 't-cells')",None
+"('breast', 'breast glandular cells')",None
+"('endometrium', 'macrophages')",None
+"('colon', 'distal enterocytes')",None
+"('colon', 'paneth cells')","('GI tract', 'Paneth cells')"
+"('eye', 'rod photoreceptor cells')","('Eye', 'Photoreceptor cells')"
+"('testis', 'late spermatids')",None
+"('placenta', 'fibroblasts')",None
+"('prostate', 'fibroblasts')",None
+"('testis', 'sertoli cells')","('Reproductive', 'Sertoli cells')"
+"('bronchus', 'smooth muscle cells')","('Smooth muscle', 'Airway smooth muscle cells')"
+"('esophagus', 'schwann cells')",None
+"('liver', 'hepatocytes')","('Liver', 'Hepatocytes')"
+"('rectum', 'enteroendocrine cells')","('GI tract', 'Enteroendocrine cells')"
+"('colon', 't-cells')",None
+"('fallopian tube', 'smooth muscle cells')",None
+"('lung', 'alveolar cells type 2')","('Lungs', 'Pulmonary alveolar type II cells')"
+"('salivary gland', 'plasma cells')",None
+"('brain', 'astrocytes')","('Brain', 'Astrocytes')"
+"('bronchus', 'ciliated cells')",None
+"('colon', 'undifferentiated cells')",None
+"('kidney', 'b-cells')",None
+"('breast', 'smooth muscle cells')",None
+"('kidney', 'collecting duct cells')",None
+"('prostate', 'smooth muscle cells')",None
+"('salivary gland', 't-cells')",None
+"('thymus', 'plasma cells')",None
+"('prostate', 'prostatic glandular cells')",None
+"('tongue', 'basal keratinocytes')",None
+"('placenta', 'hofbauer cells')",None
+"('skeletal muscle', 'skeletal myocytes')",None
+"('tongue', 'macrophages')",None
+"('adipose tissue', 'fibroblasts')","('Connective tissue', 'Fibroblasts')"
+"('adipose tissue', 'dendritic cells')",None
+"('breast', 'breast myoepithelial cells')",None
+"('pbmc', 'monocytes')","('Immune system', 'Monocytes')"
+"('fallopian tube', 'neutrophils')",None
+"('kidney', 'proximal tubular cells')",None
+"('spleen', 'macrophages')",None
+"('breast', 'fibroblasts')",None
+"('esophagus', 'plasma cells')",None
+"('adipose tissue', 't-cells')",None
+"('bronchus', 'ionocytes')","('Lungs', 'Ionocytes')"
+"('lung', 't-cells')",None
+"('lung', 'club cells')",None
+"('bone marrow', 'b-cells')",None
+"('endometrium', 'endometrial stromal cells')",None
+"('skin', 't-cells')",None
+"('thymus', 'macrophages')",None
+"('vascular', 'smooth muscle cells')","('Smooth muscle', 'Vascular smooth muscle cells')"
+"('adipose tissue', 'schwann cells')",None
+"('liver', 'kupffer cells')","('Liver', 'Kupffer cells')"
+"('heart muscle', 'cardiomyocytes')","('Heart', 'Cardiomyocytes')"
+"('placenta', 'smooth muscle cells')",None
+"('liver', 'plasma cells')",None
+"('stomach', 'fibroblasts')",None
+"('tongue', 'endothelial cells')",None
+"('brain', 'excitatory neurons')",None
+"('fallopian tube', 'ciliated cells')",None
+"('prostate', 'mixed cell types')",None
+"('adipose tissue', 'nk-cells')",None
+"('lung', 'ciliated cells')","('Lungs', 'Ciliated cells')"
+"('liver', 'cholangiocytes')","('Liver', 'Cholangiocytes')"
+"('adipose tissue', 'macrophages')",None
+"('bone marrow', 'plasma cells')",None
+"('skeletal muscle', 'endothelial cells')",None
+"('heart muscle', 'endothelial cells')",None
+"('thymus', 'endothelial cells')",None
+"('colon', 'enteroendocrine cells')","('GI tract', 'Enteroendocrine cells')"
+"('vascular', 'endothelial cells')","('Vasculature', 'Endothelial cells')"
+"('eye', 'cone photoreceptor cells')","('Eye', 'Photoreceptor cells')"
+"('fallopian tube', 'endothelial cells')",None
+"('fallopian tube', 'plasma cells')",None
+"('liver', 'fibroblasts')",None
+"('rectum', 'undifferentiated cells')",None
+"('pancreas', 'mixed cell types')",None
+"('stomach', 'b-cells')",None
+"('thymus', 'b-cells')",None
+"('skin', 'basal keratinocytes')",None
+"('breast', 't-cells')",None
+"('testis', 'spermatocytes')","('Reproductive', 'Spermatocytes')"
+"('vascular', 'macrophages')",None
+"('small intestine', 'proximal enterocytes')",None
+"('placenta', 'endothelial cells')",None
+"('salivary gland', 'b-cells')",None
+"('bone marrow', 'macrophages')",None
+"('stomach', 'gastric mucus-secreting cells')",None
+"('small intestine', 'enteroendocrine cells')","('GI tract', 'Enteroendocrine cells')"
+"('pancreas', 'macrophages')",None
+"('pancreas', 'endothelial cells')",None
+"('skin', 'b-cells')",None
+"('bone marrow', 'erythroid cells')",None
+"('rectum', 'distal enterocytes')",None
+"('lung', 'fibroblasts')",None
+"('small intestine', 'mixed immune cells')",None
+"('stomach', 'plasma cells')",None
+"('testis', 'spermatogonia')",None
+"('placenta', 'mixed immune cells')",None
+"('salivary gland', 'smooth muscle cells')",None
+"('skeletal muscle', 't-cells')",None
+"('eye', 'bipolar cells')",None
+"('small intestine', 'paneth cells')","('GI tract', 'Paneth cells')"
+"('prostate', 'club cells')",None
+"('skin', 'langerhans cells')","('Skin', 'Langerhans cells')"
+"('adipose tissue', 'adipocytes')","('Connective tissue', 'Adipocytes')"
+"('esophagus', 'b-cells')",None
+"('salivary gland', 'endothelial cells')",None
+"('skeletal muscle', 'smooth muscle cells')",None
+"('skin', 'suprabasal keratinocytes')",None
+"('spleen', 't-cells')",None
+"('thymus', 't-cells')",None
+"('liver', 'erythroid cells')",None
+"('spleen', 'plasma cells')",None
+"('vascular', 't-cells')",None
+"('bronchus', 'basal respiratory cells')",None
+"('adipose tissue', 'b-cells')",None
+"('pancreas', 'ductal cells')","('Pancreas', 'Ductal cells')"
+"('fallopian tube', 'lymphatic endothelial cells')",None
+"('lung', 'alveolar cells type 1')","('Lungs', 'Pulmonary alveolar type I cells')"
+"('bone marrow', 't-cells')",None
+"('breast', 'macrophages')",None
+"('pancreas', 'mixed immune cells')",None
+"('thymus', 'smooth muscle cells')",None
+"('rectum', 'intestinal goblet cells')"," ('GI tract', 'Goblet cells')"
+"('ovary', 'smooth muscle cells')",None
+"('spleen', 'b-cells')",None
+"('thymus', 'mesothelial cells')",None
+"('prostate', 'basal prostatic cells')",None
+"('skin', 'endothelial cells')",None
+"('ovary', 'lymphatic endothelial cells')",None
+"('kidney', 'distal tubular cells')",None
+"('skeletal muscle', 'mixed cell types')",None
+"('endometrium', 'glandular and luminal cells')",None
+"('salivary gland', 'mixed immune cells')",None
+"('colon', 'intestinal goblet cells')"," ('GI tract', 'Goblet cells')"
+"('lung', 'b-cells')",None
+"('testis', 'leydig cells')","('Reproductive', 'Leydig cells')"
+"('fallopian tube', 'secretory cells')",None
+"('pancreas', 'exocrine glandular cells')",None
+"('ovary', 'granulosa cells')","('Reproductive', 'Granulosa cells')"
+"('pancreas', 'fibroblasts')",None
+"('testis', 'peritubular cells')","('Reproductive', 'Peritubular myoid cells')"
+"('breast', 'adipocytes')","('Connective tissue', 'Adipocytes')"
+"('tongue', 'serous glandular cells')",None
+"('esophagus', 'fibroblasts')",None
+"('fallopian tube', 'granulocytes')",None
+"('heart muscle', 'smooth muscle cells')",None
+"('liver', 'endothelial cells')",None
+"('salivary gland', 'mucus glandular cells')",None
+"('lung', 'smooth muscle cells')","('Smooth muscle', 'Airway smooth muscle cells')"
+"('prostate', 'endothelial cells')",None
+"('skin', 'smooth muscle cells')",None
+"('vascular', 'fibroblasts')",None
+"('adipose tissue', 'smooth muscle cells')",None
+"('brain', 'microglial cells')",None
+"('esophagus', 'basal squamous epithelial cells')",None
+"('pancreas', 'pancreatic endocrine cells')",None
+"('testis', 'macrophages')",None
+"('endometrium', 'endothelial cells')",None
+"('adipose tissue', 'monocytes')",None
+"('endometrium', 'smooth muscle cells')",None
+"('esophagus', 'smooth muscle cells')",None
+"('tongue', 'granulocytes')",None
+"('esophagus', 'endothelial cells')",None
+"('lung', 'macrophages')","('Lungs', 'Alveolar macrophages')"
+"('eye', 'muller glia cells')",None
+"('liver', 'smooth muscle cells')",None
+"('testis', 'endothelial cells')",None
+"('pbmc', 'b-cells')","('Immune system', 'B cells')"
+"('placenta', 'extravillous trophoblasts')",None
+"('placenta', 'syncytiotrophoblasts')",None
+"('small intestine', 'undifferentiated cells')",None
+"('thymus', 'fibroblasts')",None
+"('brain', 'inhibitory neurons')",None
+"('lung', 'granulocytes')",None
+"('fallopian tube', 'macrophages')",None
+"('salivary gland', 'salivary duct cells')",None
+"('kidney', 'macrophages')",None
+"('tongue', 'smooth muscle cells')",None
+"('pbmc', 'platelets')","('Blood', 'Platelets')"
+"('pbmc', 'macrophages')","('Immune system', 'Macrophages')"
+"('liver', 't-cells')",None
+"('salivary gland', 'serous glandular cells')",None
+"('skeletal muscle', 'macrophages')",None
+"('ovary', 'ovarian stromal cells')",None
+"('tongue', 'suprabasal keratinocytes')",None
+"('esophagus', 't-cells')",None
+"('skin', 'melanocytes')","('Skin', 'Melanocytes')"
+"('breast', 'endothelial cells')",None
+"('salivary gland', 'fibroblasts')",None
+"('kidney', 't-cells')",None
+"('bronchus', 'club cells')",None
+"('prostate', 'macrophages')",None
+"('ovary', 'mixed immune cells')",None
+"('salivary gland', 'macrophages')",None
+"('lymph node', 'b-cells')",None
+"('endometrium', 'ciliated cells')",None
+"('placenta', 'cytotrophoblasts')",None
+"('brain', 'oligodendrocytes')","('Brain', 'Oligodendrocytes')"
+"('placenta', 't-cells')",None
+"('skin', 'fibroblasts')",None
+"('stomach', 'macrophages')",None
+"('prostate', 't-cells')",None
+"('heart muscle', 'fibroblasts')",None
+"('brain', 'oligodendrocyte precursor cells')",None
+"('skin', 'granulocytes')",None
+"('vascular', 'schwann cells')",None
+"('endometrium', 't-cells')",None
+"('tongue', 't-cells')",None
+"('esophagus', 'squamous epithelial cells')",None
+"('fallopian tube', 'fibroblasts')",None
+"('pbmc', 'dendritic cells')","('Immune system', 'Dendritic cells')"
+"('ovary', 'endothelial cells')",None
+"('skeletal muscle', 'fibroblasts')",None
+"('esophagus', 'macrophages')",None
+"('pbmc', 'nk-cells')","('Immune system', 'NK cells')"
+"('testis', 'early spermatids')",None
+"('fallopian tube', 't-cells')",None
+"('lymph node', 't-cells')",None
+"('ovary', 'oocytes')",None
