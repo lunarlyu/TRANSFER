@@ -13,8 +13,8 @@ Usage:
     python main.py [--data-dir DATA_DIR] [--output-dir OUTPUT_DIR] [--skip-processing] [--skip-plots]
 
 Arguments:
-    --data-dir       Directory containing input data (default: current directory)
-    --output-dir     Directory for output files (default: current directory)
+    --data-dir       Directory containing input data (default: Data)
+    --output-dir     Directory for output files (default: Results)
     --plots-dir      Directory for plot outputs (default: plots)
     --skip-processing  Skip data processing step (use existing processed files)
     --skip-plots     Skip plot generation step
@@ -53,14 +53,14 @@ Examples:
     
     parser.add_argument(
         "--data-dir",
-        default=".",
-        help="Directory containing input data files (default: current directory)"
+        default="Data",
+        help="Directory containing input data files (default: Data)"
     )
     
     parser.add_argument(
         "--output-dir",
-        default=".",
-        help="Directory for output files (default: current directory)"
+        default="Results",
+        help="Directory for output files (default: Results)"
     )
     
     parser.add_argument(
@@ -98,13 +98,13 @@ Examples:
     
     # Validate data directory
     required_files = [
-        "Original data/mass_spec_valid_surface_protein.csv",
-        "Original data/rna_single_cell_type_tissue.tsv",
-        "Original data/Cell_marker_Human.xlsx",
-        "Original data/PanglaoDB_markers_27_Mar_2020.tsv",
-        "Original data/CellMarker_name_match.csv",
-        "Original data/PanglaoDB_name_match.csv",
-        "Original data/common_cells_across_tissues.csv"
+        "mass_spec_valid_surface_protein.csv",
+        "rna_single_cell_type_tissue.tsv",
+        "Cell_marker_Human.xlsx",
+        "PanglaoDB_markers_27_Mar_2020.tsv",
+        "CellMarker_name_match.csv",
+        "PanglaoDB_name_match.csv",
+        "common_cells_across_tissues.csv"
     ]
     
     if not args.skip_processing:

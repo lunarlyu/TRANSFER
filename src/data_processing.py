@@ -12,6 +12,7 @@ cell surface marker prediction. It includes functions for:
 import csv
 import re
 import ast
+import shutil
 from pathlib import Path
 from typing import Dict, List, Set, Tuple, Optional
 
@@ -486,12 +487,12 @@ def run_data_processing(data_dir: str, output_dir: str) -> Dict:
     
     # Load surface proteins
     print("Loading surface proteins...")
-    surface_genes = load_surface_proteins(data_path / "Original data" / "mass_spec_valid_surface_protein.csv")
+    surface_genes = load_surface_proteins(data_path / "mass_spec_valid_surface_protein.csv")
     print(f"  Loaded {len(surface_genes)} surface protein genes")
     
     # Load and clean expression data
     print("\nLoading and cleaning expression data...")
-    df = pd.read_csv(data_path / "Original data" / "rna_single_cell_type_tissue.tsv", sep='\t')
+    df = pd.read_csv(data_path / "rna_single_cell_type_tissue.tsv", sep='\t')
     df_clean = clean_expression_data(df, surface_genes)
     print(f"  Cleaned data: {len(df_clean)} rows")
     
@@ -524,12 +525,12 @@ def run_data_processing(data_dir: str, output_dir: str) -> Dict:
     
     # Load marker databases
     print("\nLoading marker databases...")
-    cellmarker_df = pd.read_excel(data_path / "Original data" / "Cell_marker_Human.xlsx")
-    panglao_df = pd.read_csv(data_path / "Original data" / "PanglaoDB_markers_27_Mar_2020.tsv", delimiter='\t')
+    cellmarker_df = pd.read_excel(data_path / "Cell_marker_Human.xlsx")
+    panglao_df = pd.read_csv(data_path / "PanglaoDB_markers_27_Mar_2020.tsv", delimiter='\t')
     
     # Load marker matches
-    cellmarker_matches, _ = load_marker_matches(data_path / "Original data" / "CellMarker_name_match.csv")
-    panglao_matches, _ = load_marker_matches(data_path / "Original data" / "PanglaoDB_name_match.csv")
+    cellmarker_matches, _ = load_marker_matches(data_path / "CellMarker_name_match.csv")
+    panglao_matches, _ = load_marker_matches(data_path / "PanglaoDB_name_match.csv")
     
     # Get markers from databases
     cellmarker_genes = get_cellmarker_genes(cellmarker_matches, cellmarker_df)
@@ -552,6 +553,12 @@ def run_data_processing(data_dir: str, output_dir: str) -> Dict:
     # Save labels
     save_labels_to_csv(positives, output_path / "positives_labels.csv", "Positive")
     save_labels_to_csv(negatives, output_path / "negative_labels.csv", "Negative")
+    
+    # Copy common cells file to output for controlled learning
+    common_cells_src = data_path / "common_cells_across_tissues.csv"
+    common_cells_dst = output_path / "common_cells_across_tissues.csv"
+    shutil.copy(common_cells_src, common_cells_dst)
+    print(f"  Copied common_cells_across_tissues.csv to output directory")
     
     print("\n=== Data Processing Complete ===\n")
     

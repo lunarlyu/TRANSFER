@@ -59,7 +59,7 @@ def load_data_files(data_dir: str) -> Dict:
     tissue_cells = tissue_cells[1:]  # Remove header
     
     # Load common cells across tissues
-    with open(data_path / "Original data" / "common_cells_across_tissues.csv", newline='') as file:
+    with open(data_path / "common_cells_across_tissues.csv", newline='') as file:
         reader = csv.reader(file, delimiter='\t')
         common_cells = list(reader)
     common_cells.append('serous glandular cells')
