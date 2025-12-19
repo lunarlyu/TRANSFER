@@ -2,12 +2,16 @@
 Controlled Learning Module
 
 This module implements the penalty matrix optimization algorithm for
-cell surface marker prediction. Matches the exact logic from Controled_Learning.ipynb.
+cell surface marker prediction.
+
+The algorithm optimizes three parameters (p, q, r) that control how expression
+from different tissue-cell combinations is weighted when scoring marker candidates.
 """
 
 import csv
+from itertools import product
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -17,84 +21,201 @@ from .io_utils import (
     load_tissue_cells,
     load_gene_list,
     load_common_cells,
-    load_expression_matrices,
-    save_recommendations
 )
 
 
-def load_labels_indexed(
-    data_dir: str,
+# =============================================================================
+# Penalty Matrix Construction
+# =============================================================================
+
+def precompute_penalty_masks(
+    tissue_cells: List[List[str]],
+    common_cells: List
+) -> Dict[str, np.ndarray]:
+    """
+    Precompute boolean masks for penalty matrix construction.
+    
+    These masks are independent of p, q, r values and only need to be
+    computed once per run.
+    
+    Args:
+        tissue_cells: List of [tissue, cell_type] pairs
+        common_cells: List of common cell types across tissues
+        
+    Returns:
+        Dictionary of boolean masks for each penalty category
+    """
+    m = len(tissue_cells)
+    
+    # Extract tissue and cell arrays for vectorized comparison
+    tissues = np.array([tc[0] for tc in tissue_cells])
+    cells = np.array([tc[1] for tc in tissue_cells])
+    
+    # Flatten common_cells (may contain lists or strings due to CSV loading)
+    common_cells_set = set()
+    for c in common_cells:
+        if isinstance(c, list):
+            common_cells_set.add(c[0])
+        else:
+            common_cells_set.add(c)
+    
+    # Basic boolean masks (m x m matrices)
+    mask_self = np.eye(m, dtype=bool)
+    mask_same_cell = cells[:, None] == cells[None, :]
+    mask_same_tissue = tissues[:, None] == tissues[None, :]
+    
+    # Check if cell[j] is in common_cells (broadcast to m x m)
+    is_common = np.array([cell in common_cells_set for cell in cells])
+    mask_j_common = np.broadcast_to(is_common[None, :], (m, m))
+    
+    # Combined masks for each penalty case
+    return {
+        'self': mask_self,
+        'same_cell_common': mask_same_cell & mask_j_common & ~mask_self,
+        'same_cell_noncommon': mask_same_cell & ~mask_j_common & ~mask_self,
+        'diff_cell_same_tissue': ~mask_same_cell & mask_same_tissue,
+        'diff_cell_diff_tissue': ~mask_same_cell & ~mask_same_tissue & ~mask_self,
+    }
+
+
+def build_penalty_matrix(
+    masks: Dict[str, np.ndarray],
+    p: float,
+    q: float,
+    r: float
+) -> np.ndarray:
+    """
+    Build penalty matrix from precomputed masks and parameter values.
+    
+    Penalty values:
+        - Self (diagonal): 1000
+        - Same cell type, common: 0
+        - Same cell type, non-common: p
+        - Different cell, same tissue: q
+        - Different cell, different tissue: r
+    
+    Args:
+        masks: Precomputed boolean masks from precompute_penalty_masks()
+        p: Penalty for same cell (non-common) in different tissue
+        q: Penalty for different cell in same tissue
+        r: Penalty for different cell in different tissue
+        
+    Returns:
+        Penalty matrix of shape (m, m)
+    """
+    m = masks['self'].shape[0]
+    penalty = np.zeros((m, m), dtype=np.float64)
+    
+    penalty[masks['self']] = 1000.0
+    # same_cell_common stays 0 (default)
+    penalty[masks['same_cell_noncommon']] = p
+    penalty[masks['diff_cell_same_tissue']] = q
+    penalty[masks['diff_cell_diff_tissue']] = r
+    
+    return penalty
+
+
+# =============================================================================
+# Score Computation
+# =============================================================================
+
+def compute_top_k_indices(objective_matrix: np.ndarray, k: int = 10) -> np.ndarray:
+    """
+    Get indices of top-k scoring genes for each cell.
+    
+    Args:
+        objective_matrix: Score matrix of shape (num_cells, num_genes)
+        k: Number of top genes to select
+        
+    Returns:
+        Array of shape (num_cells, k) with top-k gene indices per cell
+    """
+    # argsort gives ascending order, so we take the last k and reverse
+    return np.argsort(objective_matrix, axis=1)[:, -k:][:, ::-1]
+
+
+def compute_scores(
+    objective_matrix: np.ndarray,
+    top_k_indices: np.ndarray,
+    positives: Dict[int, List[int]],
+    negatives: Dict[int, List[int]],
+    highly_expressed: Set[int],
+    literature_lookup: Dict[int, int]
+) -> Tuple[int, int, int, int]:
+    """
+    Compute all four scoring metrics for a given objective matrix.
+    
+    Args:
+        objective_matrix: Score matrix of shape (num_cells, num_genes)
+        top_k_indices: Precomputed top-k indices per cell
+        positives: Dict mapping cell index to positive marker indices
+        negatives: Dict mapping cell index to negative marker indices
+        highly_expressed: Set of highly expressed gene indices to penalize
+        literature_lookup: Dict mapping cell index to expected literature marker index
+        
+    Returns:
+        Tuple of (count1, count2, count3, count4) scores
+    """
+    # Count 1: Positive markers (from databases) appearing in top-k
+    count1 = 0
+    for cell_idx, pos_markers in positives.items():
+        top_k_set = set(top_k_indices[cell_idx])
+        count1 += len(set(pos_markers) & top_k_set)
+    
+    # Count 2: Literature-validated markers appearing in top-k
+    count2 = 0
+    for cell_idx, marker_idx in literature_lookup.items():
+        if marker_idx in top_k_indices[cell_idx]:
+            count2 += 1
+    
+    # Count 3: Negative markers appearing in top-k (penalized)
+    count3 = 0
+    for cell_idx, neg_markers in negatives.items():
+        top_k_set = set(top_k_indices[cell_idx])
+        count3 += len(set(neg_markers) & top_k_set)
+    
+    # Count 4: Highly expressed genes in top-k across all cells (penalized)
+    highly_expressed_arr = np.array(list(highly_expressed))
+    count4 = int(np.sum(np.isin(top_k_indices, highly_expressed_arr)))
+    
+    return count1, count2, count3, count4
+
+
+def build_literature_lookup(
+    positives2: List,
     gene_list: List,
-    tissue_cells: List
-) -> Tuple[Dict[int, List[int]], Dict[int, List[int]]]:
+    tissue_cells: List[List[str]]
+) -> Dict[int, int]:
     """
-    Load positive and negative labels with index mappings.
+    Build lookup table for literature-validated markers.
     
-    Matches exact logic from Controled_Learning.ipynb Cell 7.
+    Args:
+        positives2: Literature marker data
+        gene_list: List of genes
+        tissue_cells: List of [tissue, cell_type] pairs
+        
+    Returns:
+        Dict mapping cell index to marker gene index
     """
-    data_path = Path(data_dir)
+    lookup = {}
+    for row in positives2:
+        gene_name = row[0]
+        target_pair = [row[1], row[2]]
+        
+        if [gene_name] in gene_list and target_pair in tissue_cells:
+            marker_idx = gene_list.index([gene_name])
+            cell_idx = tissue_cells.index(target_pair)
+            lookup[cell_idx] = marker_idx
     
-    # Flatten gene_list if nested (exact notebook logic)
-    if isinstance(gene_list[0], list):
-        gene_list_flat = [gene[0] for gene in gene_list]
-    else:
-        gene_list_flat = gene_list
-    
-    tissue_cell_to_index = {tuple(row): idx for idx, row in enumerate(tissue_cells)}
-    gene_to_index = {gene: idx for idx, gene in enumerate(gene_list_flat)}
-    
-    # Load positive labels
-    positives_df = pd.read_csv(data_path / 'positives_labels.csv', sep='\t')
-    positives = {}
-    for idx, row in positives_df.iterrows():
-        tissue = row["Tissue"]
-        cell_type = row["Cell type"]
-        gene_names = eval(row["Positive Gene Names"])
-        
-        key = (tissue, cell_type)
-        if key not in tissue_cell_to_index:
-            continue
-        
-        cell_idx = tissue_cell_to_index[key]
-        gene_indices = [gene_to_index[gene] for gene in gene_names if gene in gene_to_index]
-        
-        if gene_indices:
-            positives[cell_idx] = gene_indices
-    
-    # Load negative labels
-    negatives_df = pd.read_csv(data_path / 'negative_labels.csv', sep='\t')
-    negatives = {}
-    for idx, row in negatives_df.iterrows():
-        tissue = row["Tissue"]
-        cell_type = row["Cell type"]
-        gene_names = eval(row["Negative Gene Names"])
-        
-        key = (tissue, cell_type)
-        if key not in tissue_cell_to_index:
-            continue
-        
-        cell_idx = tissue_cell_to_index[key]
-        gene_indices = [gene_to_index[gene] for gene in gene_names if gene in gene_to_index]
-        
-        if gene_indices:
-            negatives[cell_idx] = gene_indices
-    
-    return positives, negatives
+    return lookup
 
 
-def get_highly_expressed_genes(nTPM_matrix: np.ndarray, top_n: int = 50) -> List[int]:
-    """
-    Get indices of top N highly expressed genes (by median across cells).
-    
-    Matches exact logic from Controled_Learning.ipynb Cell 9.
-    """
-    medians = np.median(nTPM_matrix, axis=0).tolist()
-    genes_sorted = [index for index, value in sorted(enumerate(medians), key=lambda x: x[1], reverse=True)]
-    return genes_sorted[:top_n]
-
+# =============================================================================
+# Grid Search Optimization
+# =============================================================================
 
 def run_grid_search(
-    tissue_cells: List,
+    tissue_cells: List[List[str]],
     common_cells: List,
     nTPM_matrix: np.ndarray,
     positives: Dict[int, List[int]],
@@ -102,109 +223,87 @@ def run_grid_search(
     highly_expressed: List[int],
     gene_list: List,
     positives2: List,
+    p_range: Tuple[float, float, int] = (-700, -500, 20),
+    q_range: Tuple[float, float, int] = (-700, -500, 20),
+    r_range: Tuple[float, float, int] = (-700, -20, 20),
     verbose: bool = True
 ) -> Tuple[Tuple[float, float, float], Dict]:
     """
-    Run grid search for optimal parameters p, q, r.
+    Run grid search to find optimal penalty parameters p, q, r.
+    
+    The objective is to maximize:
+        score = count1 + count2 - count3 - count4
+    
+    Where:
+        - count1: Database markers appearing in top-10 (reward)
+        - count2: Literature markers appearing in top-10 (reward)
+        - count3: Negative markers appearing in top-10 (penalty)
+        - count4: Highly expressed genes in top-10 (penalty)
     
     Args:
         tissue_cells: List of [tissue, cell_type] pairs
-        common_cells: List of common cell types across tissues
-        nTPM_matrix: Expression matrix
-        positives: Dict mapping cell index to list of positive marker gene indices
-        negatives: Dict mapping cell index to list of negative marker gene indices
-        highly_expressed: List of indices of top 50 highly expressed genes to penalize
+        common_cells: List of common cell types
+        nTPM_matrix: Expression matrix (cells x genes)
+        positives: Positive label indices per cell
+        negatives: Negative label indices per cell
+        highly_expressed: Indices of highly expressed genes to avoid
         gene_list: List of genes
-        positives2: Literature-validated positive markers
-        verbose: Whether to print progress
+        positives2: Literature-validated markers
+        p_range: (start, stop, num_points) for parameter p
+        q_range: (start, stop, num_points) for parameter q
+        r_range: (start, stop, num_points) for parameter r
+        verbose: Print progress information
         
     Returns:
-        Tuple of (optimal_params, all_results_dict)
+        Tuple of (best_params, all_results_dict)
     """
-    m = len(tissue_cells)
-    dic = {}
+    # Precompute masks (only depends on tissue/cell structure)
+    masks = precompute_penalty_masks(tissue_cells, common_cells)
+    
+    # Build literature lookup table (only needs to be done once)
+    literature_lookup = build_literature_lookup(positives2, gene_list, tissue_cells)
+    
+    # Convert highly_expressed to set for faster lookup
+    highly_expressed_set = set(highly_expressed)
+    
+    # Generate parameter grid
+    p_values = np.linspace(*p_range)
+    q_values = np.linspace(*q_range)
+    r_values = np.linspace(*r_range)
+    
+    total_combinations = len(p_values) * len(q_values) * len(r_values)
+    if verbose:
+        print(f"  Running grid search over {total_combinations} parameter combinations...")
+    
+    # Grid search
+    results = {}
     best_score = float('-inf')
     best_params = None
     
-    if verbose:
-        print("  Running grid search over 8000 parameter combinations...")
-    
-    for p in np.linspace(-700, -500, 20):
-        for q in np.linspace(-700, -500, 20):
-            for r in np.linspace(-700, -20, 20):
-                # Build penalty matrix
-                penalty_matrix = []
-                for i in range(m):
-                    row = []
-                    for j in range(m):
-                        if j == i:
-                            row.append(1000)  # Self: high weight
-                        elif tissue_cells[j][1] == tissue_cells[i][1]:
-                            if tissue_cells[j][1] in common_cells:
-                                row.append(0)  # Same cell (common) in different tissue
-                            else:
-                                row.append(p)  # Same cell (non-common) in different tissue
-                        elif tissue_cells[j][0] == tissue_cells[i][0]:
-                            row.append(q)  # Different cell in same tissue
-                        else:
-                            row.append(r)  # Different cell in different tissue
-                    penalty_matrix.append(row)
-                penalty_matrix = np.array(penalty_matrix)
-                objective_matrix = np.dot(penalty_matrix, nTPM_matrix)
-                objective_list = objective_matrix.tolist()
-                
-                # Count 1: Organ-wide markers (from databases)
-                count1 = 0
-                for cell_idx in positives:
-                    pos_markers = positives[cell_idx]
-                    obj_row = objective_list[cell_idx]
-                    top_markers = sorted(enumerate(obj_row), key=lambda x: x[1], reverse=True)[:10]
-                    suggested = [idx for idx, _ in top_markers]
-                    count1 += len(set(pos_markers).intersection(set(suggested)))
-                
-                # Count 2: Whole-body markers (from literature) - FIXED
-                count2 = 0
-                for row in positives2:
-                    if [row[0]] in gene_list:
-                        marker_idx = gene_list.index([row[0]])
-                        target_pair = [row[1], row[2]]
-                        if target_pair in tissue_cells:
-                            cell_idx = tissue_cells.index(target_pair)
-                            obj_row = objective_list[cell_idx]
-                            top_markers = sorted(enumerate(obj_row), key=lambda x: x[1], reverse=True)[:10]
-                            suggested = [idx for idx, _ in top_markers]
-                            # FIXED: Check if marker is in suggested top 10
-                            if marker_idx in suggested:
-                                count2 += 1
-                
-                # Count 3: Negative markers (to minimize)
-                count3 = 0
-                for cell_idx in negatives:
-                    neg_markers = negatives[cell_idx]
-                    obj_row = objective_list[cell_idx]
-                    top_markers = sorted(enumerate(obj_row), key=lambda x: x[1], reverse=True)[:10]
-                    suggested = [idx for idx, _ in top_markers]
-                    count3 += len(set(neg_markers).intersection(set(suggested)))
-                
-                # Count 4: Highly expressed genes (to minimize) - FIXED
-                count4 = 0
-                for obj_row in objective_list:
-                    top_markers = sorted(enumerate(obj_row), key=lambda x: x[1], reverse=True)[:10]
-                    suggested = [idx for idx, _ in top_markers]
-                    # FIXED: Count inside the loop for ALL cells, not just last
-                    count4 += len(set(suggested).intersection(set(highly_expressed)))
-                
-                # Compute score (maximize positives, minimize negatives)
-                score = count1 + count2 - count3 - count4
-                
-                dic[(p, q, r)] = (count1, count2, count3, count4)
-                
-                if score > best_score:
-                    best_score = score
-                    best_params = (p, q, r)
+    for p, q, r in product(p_values, q_values, r_values):
+        # Build penalty and objective matrices
+        penalty_matrix = build_penalty_matrix(masks, p, q, r)
+        objective_matrix = penalty_matrix @ nTPM_matrix
+        
+        # Get top-10 indices for all cells
+        top_k_indices = compute_top_k_indices(objective_matrix, k=10)
+        
+        # Compute scores
+        count1, count2, count3, count4 = compute_scores(
+            objective_matrix, top_k_indices,
+            positives, negatives,
+            highly_expressed_set, literature_lookup
+        )
+        
+        score = count1 + count2 - count3 - count4
+        results[(p, q, r)] = (count1, count2, count3, count4)
+        
+        if score > best_score:
+            best_score = score
+            best_params = (p, q, r)
     
     if verbose and best_params:
-        counts = dic[best_params]
+        counts = results[best_params]
         print(f"  Optimal parameters: p={best_params[0]:.2f}, q={best_params[1]:.2f}, r={best_params[2]:.2f}")
         print(f"  Organ-wide marker hits: {counts[0]}")
         print(f"  Whole-body marker hits: {counts[1]}")
@@ -212,96 +311,153 @@ def run_grid_search(
         print(f"  Highly expressed hits (penalized): {counts[3]}")
         print(f"  Total score: {best_score}")
     
-    return best_params, dic
+    return best_params, results
 
 
-def build_objective_matrix(
-    tissue_cells: List,
-    common_cells: List,
-    nTPM_matrix: np.ndarray,
-    p: float,
-    q: float,
-    r: float
-) -> np.ndarray:
-    """
-    Build the objective matrix with given parameters.
-    
-    Matches exact logic from Controled_Learning.ipynb Cell 13/17.
-    """
-    m = len(tissue_cells)
-    penalty_matrix = []
-    for i in range(m):
-        row = []
-        for j in range(m):
-            if j == i:
-                row.append(1000)
-            elif tissue_cells[j][1] == tissue_cells[i][1]:
-                if tissue_cells[j][1] in common_cells:
-                    row.append(0)  # same cell (common) and diff tissue
-                else:
-                    row.append(p)  # same cell (non common) and diff tissue
-            elif tissue_cells[j][0] == tissue_cells[i][0]:
-                row.append(q)  # diff cell and same tissue
-            else:
-                row.append(r)  # diff cell and diff tissue
-        penalty_matrix.append(row)
-    penalty_matrix = np.array(penalty_matrix)
-    objective_matrix = np.dot(penalty_matrix, nTPM_matrix)
-    return objective_matrix
-
+# =============================================================================
+# Marker Recommendation
+# =============================================================================
 
 def recommend_markers(
     objective_matrix: np.ndarray,
-    tissue_cells: List,
+    tissue_cells: List[List[str]],
     gene_list: List,
     top_k: int = 10
 ) -> Dict[str, List[str]]:
     """
     Generate top-k marker recommendations for each cell type.
     
-    Matches exact logic from Controled_Learning.ipynb Cell 14/18.
+    Args:
+        objective_matrix: Score matrix (cells x genes)
+        tissue_cells: List of [tissue, cell_type] pairs
+        gene_list: List of genes (possibly nested as [[gene1], [gene2], ...])
+        top_k: Number of top markers to recommend
+        
+    Returns:
+        Dictionary mapping cell name to list of recommended marker genes
     """
-    # Flatten gene_list if nested
-    if isinstance(gene_list[0], list):
+    # Handle nested gene list format
+    if gene_list and isinstance(gene_list[0], list):
         genes = gene_list
     else:
         genes = [[g] for g in gene_list]
     
-    m = len(tissue_cells)
-    whole_body_markers = {}
+    # Get top-k indices
+    top_k_indices = compute_top_k_indices(objective_matrix, k=top_k)
     
-    for i in range(m):
-        obj_row = objective_matrix[i]
-        markers = sorted(list(enumerate(obj_row)), key=lambda x: x[1], reverse=True)[:top_k]
-        markers_id = [x[0] for x in markers]
-        cell_name = tissue_cells[i][0] + " " + tissue_cells[i][1]
-        whole_body_markers[cell_name] = [genes[x][0] for x in markers_id]
+    # Build recommendations
+    recommendations = {}
+    for i, (tissue, cell_type) in enumerate(tissue_cells):
+        cell_name = f"{tissue} {cell_type}"
+        marker_indices = top_k_indices[i]
+        recommendations[cell_name] = [genes[idx][0] for idx in marker_indices]
     
-    return whole_body_markers
+    return recommendations
 
 
-def save_recommendations_notebook_style(
+def save_recommendations_csv(
     recommendations: Dict[str, List[str]],
     output_path: str
 ):
     """
-    Save recommendations in exact notebook format.
+    Save marker recommendations to CSV file.
     
-    Matches exact logic from Controled_Learning.ipynb Cell 14/18.
+    Args:
+        recommendations: Dictionary mapping cell name to marker list
+        output_path: Output file path
     """
-    with open(output_path, 'w', newline='') as csvfile:
-        csvwriter = csv.writer(csvfile)
-        csvwriter.writerow(["cell", "markers"])
-        for key, value in recommendations.items():
-            row = [key, value]
-            csvwriter.writerow(row)
+    with open(output_path, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(["cell", "markers"])
+        for cell_name, markers in recommendations.items():
+            writer.writerow([cell_name, markers])
 
 
-def run_controlled_learning(data_dir: str, output_dir: str) -> Dict:
+# =============================================================================
+# Label Loading
+# =============================================================================
+
+def load_labels_indexed(
+    data_dir: str,
+    gene_list: List,
+    tissue_cells: List[List[str]]
+) -> Tuple[Dict[int, List[int]], Dict[int, List[int]]]:
+    """
+    Load positive and negative labels with index mappings.
+    
+    Args:
+        data_dir: Directory containing label CSV files
+        gene_list: List of genes
+        tissue_cells: List of [tissue, cell_type] pairs
+        
+    Returns:
+        Tuple of (positives, negatives) dictionaries
+        Each maps cell index to list of gene indices
+    """
+    data_path = Path(data_dir)
+    
+    # Flatten gene_list if nested
+    if gene_list and isinstance(gene_list[0], list):
+        gene_list_flat = [gene[0] for gene in gene_list]
+    else:
+        gene_list_flat = gene_list
+    
+    # Create index mappings
+    tissue_cell_to_index = {tuple(row): idx for idx, row in enumerate(tissue_cells)}
+    gene_to_index = {gene: idx for idx, gene in enumerate(gene_list_flat)}
+    
+    # Load positive labels
+    positives_df = pd.read_csv(data_path / 'positives_labels.csv', sep='\t')
+    positives = {}
+    for _, row in positives_df.iterrows():
+        key = (row["Tissue"], row["Cell type"])
+        if key not in tissue_cell_to_index:
+            continue
+        
+        cell_idx = tissue_cell_to_index[key]
+        gene_names = eval(row["Positive Gene Names"])
+        gene_indices = [gene_to_index[g] for g in gene_names if g in gene_to_index]
+        
+        if gene_indices:
+            positives[cell_idx] = gene_indices
+    
+    # Load negative labels
+    negatives_df = pd.read_csv(data_path / 'negative_labels.csv', sep='\t')
+    negatives = {}
+    for _, row in negatives_df.iterrows():
+        key = (row["Tissue"], row["Cell type"])
+        if key not in tissue_cell_to_index:
+            continue
+        
+        cell_idx = tissue_cell_to_index[key]
+        gene_names = eval(row["Negative Gene Names"])
+        gene_indices = [gene_to_index[g] for g in gene_names if g in gene_to_index]
+        
+        if gene_indices:
+            negatives[cell_idx] = gene_indices
+    
+    return positives, negatives
+
+
+# =============================================================================
+# Main Pipeline
+# =============================================================================
+
+def run_controlled_learning(
+    data_dir: str,
+    output_dir: str,
+    run_median: bool = False
+) -> Dict:
     """
     Run the complete controlled learning pipeline.
     
-    Matches exact logic from Controled_Learning.ipynb.
+    Args:
+        data_dir: Directory containing input data files
+        output_dir: Directory for output files
+        run_median: Whether to also run the median expression method
+        
+    Returns:
+        Dictionary with results for each method
     """
     data_path = Path(data_dir)
     output_path = Path(output_dir)
@@ -309,115 +465,117 @@ def run_controlled_learning(data_dir: str, output_dir: str) -> Dict:
     
     print("=== Controlled Learning Pipeline ===\n")
     
-    # Load data (matching Cell 2-5)
+    # Load data
     print("Loading data files...")
     tissue_cells = load_tissue_cells(data_path / "tissue_cell_pairs.tsv")
     common_cells = load_common_cells(data_path / "common_cells_across_tissues.csv")
     gene_list = load_gene_list(data_path / "gene_list.csv")
     
     # Load expression matrices
-    nTPM_matrix_high_df = pd.read_csv(data_path / 'gene_expression_matrix_high.csv', sep='\t')
-    nTPM_matrix_high_only = nTPM_matrix_high_df.drop(columns=["Tissue", "Cell type"])
-    nTPM_matrix_high = nTPM_matrix_high_only.values
-    
-    nTPM_matrix_median_df = pd.read_csv(data_path / 'gene_expression_matrix_median.csv', sep='\t')
-    nTPM_matrix_median_only = nTPM_matrix_median_df.drop(columns=["Tissue", "Cell type"])
-    nTPM_matrix_median = nTPM_matrix_median_only.values
+    nTPM_high_df = pd.read_csv(data_path / 'gene_expression_matrix_high.csv', sep='\t')
+    nTPM_matrix_high = nTPM_high_df.drop(columns=["Tissue", "Cell type"]).values
     
     print(f"  Loaded {len(tissue_cells)} tissue-cell pairs")
     print(f"  Loaded {len(gene_list)} genes")
     
-    # Load labels (matching Cell 7)
+    # Load labels
     print("\nLoading labels...")
     positives, negatives = load_labels_indexed(data_dir, gene_list, tissue_cells)
     print(f"  Positive labels: {len(positives)} cells")
     print(f"  Negative labels: {len(negatives)} cells")
     
-    # Get highly expressed genes - top 50 by median expression
-    nTPM_matrix_high_medians = np.median(nTPM_matrix_high, axis=0).tolist()
-    genes_sorted_high = [index for index, value in sorted(enumerate(nTPM_matrix_high_medians), key=lambda x: x[1], reverse=True)]
-    highly_expressed_high = genes_sorted_high[:50]
+    # Compute highly expressed genes (top 50 by median expression)
+    medians_high = np.median(nTPM_matrix_high, axis=0)
+    highly_expressed_high = np.argsort(medians_high)[-50:].tolist()
     
-    # For median method - FIXED: use actual median matrix
-    nTPM_matrix_median_medians = np.median(nTPM_matrix_median, axis=0).tolist()
-    genes_sorted_median = [index for index, value in sorted(enumerate(nTPM_matrix_median_medians), key=lambda x: x[1], reverse=True)]
-    highly_expressed_median = genes_sorted_median[:50]
-    
-    # Literature positives (positives2 from Cell 10)
+    # Literature positives
     positives2 = LITERATURE_POSITIVES
     
     results = {}
     
-    # === Process HIGH method (Cell 12-14) ===
+    # === Process HIGH method ===
     print("\n--- Processing nTPM HIGH method ---")
     print("\nOptimizing parameters...")
     
-    max_set_high, dic_high = run_grid_search(
+    # Precompute penalty masks
+    masks = precompute_penalty_masks(tissue_cells, common_cells)
+    
+    best_params_high, _ = run_grid_search(
         tissue_cells, common_cells, nTPM_matrix_high,
         positives, negatives, highly_expressed_high, gene_list, positives2
     )
     
-    # Build objective matrix with optimal parameters
-    objective_matrix_high = build_objective_matrix(
-        tissue_cells, common_cells, nTPM_matrix_high,
-        max_set_high[0], max_set_high[1], max_set_high[2]
-    )
+    # Build final objective matrix
+    penalty_matrix = build_penalty_matrix(masks, *best_params_high)
+    objective_matrix_high = penalty_matrix @ nTPM_matrix_high
     
-    # Generate recommendations
+    # Generate and save recommendations
     print("\nGenerating marker recommendations...")
     recommendations_high = recommend_markers(objective_matrix_high, tissue_cells, gene_list)
-    save_recommendations_notebook_style(
-        recommendations_high,
-        output_path / "recommended_whole_body_markers_high.csv"
-    )
+    save_recommendations_csv(recommendations_high, output_path / "recommended_whole_body_markers_high.csv")
     print(f"  Saved recommendations for {len(recommendations_high)} cell types")
     
     results['high'] = {
-        'optimal_params': max_set_high,
+        'optimal_params': best_params_high,
         'recommendations': recommendations_high
     }
     
-    # === Process MEDIAN method (Cell 16-18) ===
-    # NOTE: Commented out for now - only running HIGH method
-    # print("\n--- Processing nTPM MEDIAN method ---")
-    # print("\nOptimizing parameters...")
-    # 
-    # max_set_median, dic_median = run_grid_search(
-    #     tissue_cells, common_cells, nTPM_matrix_median,
-    #     positives, negatives, highly_expressed_median, gene_list, positives2
-    # )
-    # 
-    # # Build objective matrix with optimal parameters
-    # objective_matrix_median = build_objective_matrix(
-    #     tissue_cells, common_cells, nTPM_matrix_median,
-    #     max_set_median[0], max_set_median[1], max_set_median[2]
-    # )
-    # 
-    # # Generate recommendations
-    # print("\nGenerating marker recommendations...")
-    # recommendations_median = recommend_markers(objective_matrix_median, tissue_cells, gene_list)
-    # save_recommendations_notebook_style(
-    #     recommendations_median,
-    #     output_path / "recommended_whole_body_markers_median.csv"
-    # )
-    # print(f"  Saved recommendations for {len(recommendations_median)} cell types")
-    # 
-    # results['median'] = {
-    #     'optimal_params': max_set_median,
-    #     'recommendations': recommendations_median
-    # }
+    # === Process MEDIAN method (optional) ===
+    if run_median:
+        print("\n--- Processing nTPM MEDIAN method ---")
+        
+        nTPM_median_df = pd.read_csv(data_path / 'gene_expression_matrix_median.csv', sep='\t')
+        nTPM_matrix_median = nTPM_median_df.drop(columns=["Tissue", "Cell type"]).values
+        
+        medians_median = np.median(nTPM_matrix_median, axis=0)
+        highly_expressed_median = np.argsort(medians_median)[-50:].tolist()
+        
+        print("\nOptimizing parameters...")
+        best_params_median, _ = run_grid_search(
+            tissue_cells, common_cells, nTPM_matrix_median,
+            positives, negatives, highly_expressed_median, gene_list, positives2
+        )
+        
+        penalty_matrix = build_penalty_matrix(masks, *best_params_median)
+        objective_matrix_median = penalty_matrix @ nTPM_matrix_median
+        
+        print("\nGenerating marker recommendations...")
+        recommendations_median = recommend_markers(objective_matrix_median, tissue_cells, gene_list)
+        save_recommendations_csv(recommendations_median, output_path / "recommended_whole_body_markers_median.csv")
+        print(f"  Saved recommendations for {len(recommendations_median)} cell types")
+        
+        results['median'] = {
+            'optimal_params': best_params_median,
+            'recommendations': recommendations_median
+        }
     
     print("\n=== Controlled Learning Complete ===\n")
     
     return results
 
 
+# =============================================================================
+# CLI Entry Point
+# =============================================================================
+
 if __name__ == "__main__":
     import argparse
     
-    parser = argparse.ArgumentParser(description="Run controlled learning for marker prediction")
-    parser.add_argument("--data-dir", default=".", help="Directory containing processed data")
-    parser.add_argument("--output-dir", default=".", help="Directory for output files")
+    parser = argparse.ArgumentParser(
+        description="Run controlled learning for cell surface marker prediction"
+    )
+    parser.add_argument(
+        "--data-dir", default=".",
+        help="Directory containing processed data files"
+    )
+    parser.add_argument(
+        "--output-dir", default=".",
+        help="Directory for output files"
+    )
+    parser.add_argument(
+        "--run-median", action="store_true",
+        help="Also run the median expression method"
+    )
     
     args = parser.parse_args()
-    run_controlled_learning(args.data_dir, args.output_dir)
+    run_controlled_learning(args.data_dir, args.output_dir, args.run_median)
