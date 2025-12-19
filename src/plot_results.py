@@ -13,6 +13,10 @@ from typing import List, Dict
 
 import numpy as np
 import pandas as pd
+
+# Use non-interactive backend for headless environments
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from .io_utils import load_tissue_cells, load_gene_list, load_expression_matrices
@@ -85,13 +89,16 @@ def within_cell_analysis(
     counts, bin_edges = np.histogram(ranks, bins=bins)
     bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
     
-    plt.figure(figsize=(10, 6))
-    plt.plot(bin_centers, counts, marker='o', linestyle='-', color='b')
-    plt.xlabel('Ranks')
-    plt.ylabel('Counts')
-    plt.title(f'Rank of Expression Level: Recommended Top Marker ({method_name})')
-    plt.savefig(output_path / f'topmarkers_withinCell_{method_name}.svg', format='svg')
-    plt.close()
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.plot(bin_centers, counts, marker='o', linestyle='-', color='b')
+    ax.set_xlabel('Ranks')
+    ax.set_ylabel('Counts')
+    ax.set_title(f'Rank of Expression Level: Recommended Top Marker ({method_name})')
+    
+    # Save as PNG (more universally compatible)
+    fig.savefig(output_path / f'topmarkers_withinCell_{method_name}.png', 
+                format='png', dpi=150, bbox_inches='tight')
+    plt.close(fig)
     
     # Print summary statistics
     count_bins = [0, 0, 0, 0, 0]  # <=10, 11-20, 21-30, 31-40, >40
