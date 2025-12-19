@@ -441,8 +441,7 @@ def load_labels_indexed(
 
 def run_controlled_learning(
     data_dir: str,
-    output_dir: str,
-    run_median: bool = False
+    output_dir: str
 ) -> Dict:
     """
     Run the complete controlled learning pipeline.
@@ -450,7 +449,6 @@ def run_controlled_learning(
     Args:
         data_dir: Directory containing input data files
         output_dir: Directory for output files
-        run_median: Whether to also run the median expression method
         
     Returns:
         Dictionary with results for each method
@@ -516,34 +514,32 @@ def run_controlled_learning(
         'recommendations': recommendations_high
     }
     
-    # === Process MEDIAN method (optional) ===
-    if run_median:
-        print("\n--- Processing nTPM MEDIAN method ---")
-        
-        nTPM_median_df = pd.read_csv(data_path / 'gene_expression_matrix_median.csv', sep='\t')
-        nTPM_matrix_median = nTPM_median_df.drop(columns=["Tissue", "Cell type"]).values
-        
-        medians_median = np.median(nTPM_matrix_median, axis=0)
-        highly_expressed_median = np.argsort(medians_median)[-50:].tolist()
-        
-        print("\nOptimizing parameters...")
-        best_params_median, _ = run_grid_search(
-            tissue_cells, common_cells, nTPM_matrix_median,
-            positives, negatives, highly_expressed_median, gene_list, positives2
-        )
-        
-        penalty_matrix = build_penalty_matrix(masks, *best_params_median)
-        objective_matrix_median = penalty_matrix @ nTPM_matrix_median
-        
-        print("\nGenerating marker recommendations...")
-        recommendations_median = recommend_markers(objective_matrix_median, tissue_cells, gene_list)
-        save_recommendations_csv(recommendations_median, output_path / "recommended_whole_body_markers_median.csv")
-        print(f"  Saved recommendations for {len(recommendations_median)} cell types")
-        
-        results['median'] = {
-            'optimal_params': best_params_median,
-            'recommendations': recommendations_median
-        }
+    print("\n--- Processing nTPM MEDIAN method ---")
+    
+    nTPM_median_df = pd.read_csv(data_path / 'gene_expression_matrix_median.csv', sep='\t')
+    nTPM_matrix_median = nTPM_median_df.drop(columns=["Tissue", "Cell type"]).values
+    
+    medians_median = np.median(nTPM_matrix_median, axis=0)
+    highly_expressed_median = np.argsort(medians_median)[-50:].tolist()
+    
+    print("\nOptimizing parameters...")
+    best_params_median, _ = run_grid_search(
+        tissue_cells, common_cells, nTPM_matrix_median,
+        positives, negatives, highly_expressed_median, gene_list, positives2
+    )
+    
+    penalty_matrix = build_penalty_matrix(masks, *best_params_median)
+    objective_matrix_median = penalty_matrix @ nTPM_matrix_median
+    
+    print("\nGenerating marker recommendations...")
+    recommendations_median = recommend_markers(objective_matrix_median, tissue_cells, gene_list)
+    save_recommendations_csv(recommendations_median, output_path / "recommended_whole_body_markers_median.csv")
+    print(f"  Saved recommendations for {len(recommendations_median)} cell types")
+    
+    results['median'] = {
+        'optimal_params': best_params_median,
+        'recommendations': recommendations_median
+    }
     
     print("\n=== Controlled Learning Complete ===\n")
     
@@ -568,10 +564,6 @@ if __name__ == "__main__":
         "--output-dir", default=".",
         help="Directory for output files"
     )
-    parser.add_argument(
-        "--run-median", action="store_true",
-        help="Also run the median expression method"
-    )
     
     args = parser.parse_args()
-    run_controlled_learning(args.data_dir, args.output_dir, args.run_median)
+    run_controlled_learning(args.data_dir, args.output_dir)

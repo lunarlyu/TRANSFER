@@ -109,7 +109,7 @@ The pipeline also generates analysis plots in the `Plots/` directory:
 
 | File                          | Description                             |
 | ----------------------------- | --------------------------------------- |
-| `topmarkers_withinCell_*.svg` | Histogram of marker expression ranks    |
+| `topmarkers_withinCell_*.png` | Histogram of marker expression ranks    |
 | `top1marker_*.xlsx`           | Target/off-target ratios for top marker |
 | `top10marker_*.xlsx`          | Best ratio among top 10 markers         |
 | `top2_10marker_*.xlsx`        | Best 2-marker combination ratios        |
@@ -123,7 +123,7 @@ The pipeline also generates analysis plots in the `Plots/` directory:
 
 Data directory: /path/to/Data
 Output directory: /path/to/Results
-Plots directory: /path/to/plots
+Plots directory: /path/to/Plots
 
 ============================================================
   STEP 1: Data Processing
@@ -138,17 +138,16 @@ Loading and cleaning expression data...
   Cleaned data: 8247 rows
 
 Building expression matrices...
-  High method matrix: (155, 1101)
-  Median method matrix: (155, 1101)
-
-  Saved 155 tissue-cell pairs
-  Saved 1099 genes
+  High method matrix: (154, 963)
+  Median method matrix: (154, 963)
+  Saved 154 tissue-cell pairs
+  Saved 963 genes
 
 Loading marker databases...
 
 Building positive and negative labels...
-  Positive labels: 155 cells, 1847 total labels
-  Negative labels: 155 cells, 8174 total labels
+  Positive labels: 50 cells, 558 total labels
+  Negative labels: 114 cells, 993 total labels
 
 === Data Processing Complete ===
 
@@ -156,31 +155,57 @@ Building positive and negative labels...
   STEP 2: Controlled Learning
 ============================================================
 
-Running for HIGH method...
-  Running grid search over 8000 parameter combinations...
-  Optimal parameters found: p=-700.00, q=-700.00, r=-20.00
+=== Controlled Learning Pipeline ===
 
-Running for MEDIAN method...
+Loading data files...
+  Loaded 154 tissue-cell pairs
+  Loaded 963 genes
+
+Loading labels...
+  Positive labels: 50 cells
+  Negative labels: 114 cells
+
+--- Processing nTPM HIGH method ---
+
+Optimizing parameters...
   Running grid search over 8000 parameter combinations...
-  Optimal parameters found: p=-700.00, q=-700.00, r=-20.00
+  Optimal parameters: p=-700.00, q=-700.00, r=-55.79
+  Organ-wide marker hits: 87
+  Whole-body marker hits: 0
+  Non-marker hits (penalized): 19
+  Highly expressed hits (penalized): 3
+  Total score: 65
+
+Generating marker recommendations...
+  Saved recommendations for 154 cell types
+
+=== Controlled Learning Complete ===
+
+============================================================
+  STEP 3: Plot Generation
+============================================================
+
+GENERATING PLOTS AND ANALYSIS
+  Saved: topmarkers_withinCell_high.png
+  Saved: top1marker_high.xlsx
+  Saved: top10marker_high.xlsx
+  Saved: top2_10marker_high.xlsx
 
 ============================================================
   Pipeline Complete
 ============================================================
-
-Pipeline execution completed successfully!
 ```
 
 ### Expected Run Time
 
-| Step                              | Time              |
-| --------------------------------- | ----------------- |
-| Data Processing                   | ~30 seconds       |
-| Controlled Learning (grid search) | ~5-10 minutes     |
-| Plot Generation                   | ~30 seconds       |
-| **Total**                         | **~6-11 minutes** |
+| Step                              | Time             |
+| --------------------------------- | ---------------- |
+| Data Processing                   | ~30 seconds      |
+| Controlled Learning (grid search) | ~3-5 minutes     |
+| Plot Generation                   | ~10 seconds      |
+| **Total**                         | **~4-6 minutes** |
 
-_Times measured on a standard desktop (Intel i7, 16 GB RAM)_
+_Times measured on a standard desktop (Intel i7/Apple M1, 16 GB RAM)_
 
 ## 4. Instructions for Use
 
@@ -220,7 +245,7 @@ python main.py [OPTIONS]
 Options:
   --data-dir PATH       Directory containing input data (default: Data)
   --output-dir PATH     Directory for output files (default: Results)
-  --plots-dir PATH      Directory for plot outputs (default: plots)
+  --plots-dir PATH      Directory for plot outputs (default: Plots)
   --skip-processing     Skip data processing, use existing processed files
   --skip-plots          Skip plot generation step
 ```
@@ -237,10 +262,10 @@ python main.py --skip-processing
 # Run without generating plots
 python main.py --skip-plots
 
-# Run individual modules
+# Run individual modules separately
 python -m src.data_processing --data-dir Data --output-dir Results
 python -m src.controlled_learning --data-dir Results --output-dir Results
-python -m src.plot_results --data-dir Results --plots-dir plots
+python -m src.plot_results --data-dir Results --output-dir Results --plots-dir Plots
 ```
 
 ### Output Interpretation
