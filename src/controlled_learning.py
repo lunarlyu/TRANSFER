@@ -11,7 +11,7 @@ from different tissue-cell combinations is weighted when scoring marker candidat
 import csv
 from itertools import product
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Set, Tuple
 
 import numpy as np
 import pandas as pd
@@ -57,10 +57,6 @@ def precompute_penalty_masks(
     mask_same_tissue = tissues[:, None] == tissues[None, :]
     
     # Check if cell[j] is in common_cells
-    # Note: common_cells may contain single-element lists like ['macrophages'] 
-    # and strings like 'serous glandular cells'. The original notebook code
-    # checks `cell in common_cells` directly, which only matches strings.
-    # We preserve this exact behavior for compatibility.
     is_common = np.array([cell in common_cells for cell in cells])
     mask_j_common = np.broadcast_to(is_common[None, :], (m, m))
     
@@ -103,7 +99,6 @@ def build_penalty_matrix(
     penalty = np.zeros((m, m), dtype=np.float64)
     
     penalty[masks['self']] = 1000.0
-    # same_cell_common stays 0 (default)
     penalty[masks['same_cell_noncommon']] = p
     penalty[masks['diff_cell_same_tissue']] = q
     penalty[masks['diff_cell_diff_tissue']] = r
@@ -207,7 +202,7 @@ def build_literature_lookup(
 
 
 # =============================================================================
-# Grid Search Optimization
+# Grid Search
 # =============================================================================
 
 def run_grid_search(
@@ -219,9 +214,9 @@ def run_grid_search(
     highly_expressed: List[int],
     gene_list: List,
     positives2: List,
-    p_range: Tuple[float, float, int] = (-700, -500, 20),
-    q_range: Tuple[float, float, int] = (-700, -500, 20),
-    r_range: Tuple[float, float, int] = (-700, -20, 20),
+    p_range: Tuple[float, float, int] = (-2000, -100, 30),
+    q_range: Tuple[float, float, int] = (-2000, -100, 30),
+    r_range: Tuple[float, float, int] = (-1500, -20, 30),
     verbose: bool = True
 ) -> Tuple[Tuple[float, float, float], Dict]:
     """

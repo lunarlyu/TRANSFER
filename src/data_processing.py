@@ -10,13 +10,11 @@ cell surface marker prediction. It includes functions for:
 """
 
 import csv
-import re
 import ast
 import shutil
 from pathlib import Path
 from typing import Dict, List, Set, Tuple
 
-import numpy as np
 import pandas as pd
 
 from .constants import IMMUNE_SUBTYPES, NON_MEMBRANE_GENES
@@ -163,9 +161,7 @@ def load_and_get_cellmarker_genes(
 ) -> Tuple[Dict[Tuple[str, str], List[str]], int, int]:
     """
     Load CellMarker name matches and get marker genes.
-    
-    Matches the exact logic from DataProcessing.ipynb Cell 19.
-    
+        
     Args:
         match_file_path: Path to CellMarker_name_match.csv
         cellmarker_df: CellMarker DataFrame
@@ -180,7 +176,6 @@ def load_and_get_cellmarker_genes(
         reader = csv.reader(file, delimiter='\t')
         next(reader, None)
         for row in reader:
-            # Exact notebook logic: replace curly quotes and backslashes
             cleaned = row[0].replace('\u2018', "'").replace('\u2019', "'").replace('\\', '')
             formatted = ast.literal_eval(cleaned)
             if len(formatted) > 1:
@@ -214,7 +209,6 @@ def load_and_get_panglao_genes(
     """
     Load PanglaoDB name matches and get marker genes.
     
-    Matches the exact logic from DataProcessing.ipynb Cell 19.
     Note: CSV has leading spaces in some entries that cause ast.literal_eval to fail,
     so we strip whitespace before parsing.
     
@@ -232,7 +226,6 @@ def load_and_get_panglao_genes(
         reader = csv.reader(file, delimiter='\t')
         next(reader, None)
         for row in reader:
-            # Exact notebook logic: replace curly quotes and backslashes
             cleaned = row[0].replace('\u2018', "'").replace('\u2019', "'").replace('\\', '')
             formatted = ast.literal_eval(cleaned)
             if formatted[1] == None:
@@ -264,9 +257,7 @@ def combine_marker_databases(
 ) -> Tuple[Dict[Tuple[str, str], List[str]], int]:
     """
     Combine markers from CellMarker and PanglaoDB databases.
-    
-    Matches the exact logic from DataProcessing.ipynb Cell 19.
-    
+        
     Args:
         cellmarker_genes: Markers from CellMarker (matched_cells1)
         panglao_genes: Markers from PanglaoDB (matched_cells2)
@@ -304,9 +295,7 @@ def build_positive_labels(
 ) -> Dict[Tuple[str, str], List[str]]:
     """
     Build positive labels dictionary from marker databases.
-    
-    Matches the exact logic from DataProcessing.ipynb Cell 21.
-    
+        
     Args:
         markers: Combined marker dictionary
         gene_list: List of valid genes in the dataset
@@ -434,7 +423,6 @@ def run_data_processing(data_dir: str, output_dir: str) -> Dict:
     cellmarker_df = pd.read_excel(data_path / "Cell_marker_Human.xlsx")
     panglao_df = pd.read_csv(data_path / "PanglaoDB_markers_27_Mar_2020.tsv", delimiter='\t')
     
-    # Load marker matches and get genes (matching notebook Cell 19)
     cellmarker_genes, cm_match_count, cm_marker_count = load_and_get_cellmarker_genes(
         data_path / "CellMarker_name_match.csv", cellmarker_df
     )
@@ -445,7 +433,6 @@ def run_data_processing(data_dir: str, output_dir: str) -> Dict:
     print(f"  CellMarker: {cm_match_count} cells matched, {cm_marker_count} markers")
     print(f"  PanglaoDB: {pg_match_count} cells matched, {pg_marker_count} markers")
     
-    # Combine markers (matching notebook Cell 19)
     markers, total_markers = combine_marker_databases(cellmarker_genes, panglao_genes)
     print(f"  Combined: {len(markers)} cells, {total_markers} markers")
     
