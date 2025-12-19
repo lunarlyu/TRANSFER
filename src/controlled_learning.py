@@ -51,21 +51,17 @@ def precompute_penalty_masks(
     tissues = np.array([tc[0] for tc in tissue_cells])
     cells = np.array([tc[1] for tc in tissue_cells])
     
-    # Flatten common_cells (may contain lists or strings due to CSV loading)
-    common_cells_set = set()
-    for c in common_cells:
-        if isinstance(c, list):
-            common_cells_set.add(c[0])
-        else:
-            common_cells_set.add(c)
-    
     # Basic boolean masks (m x m matrices)
     mask_self = np.eye(m, dtype=bool)
     mask_same_cell = cells[:, None] == cells[None, :]
     mask_same_tissue = tissues[:, None] == tissues[None, :]
     
-    # Check if cell[j] is in common_cells (broadcast to m x m)
-    is_common = np.array([cell in common_cells_set for cell in cells])
+    # Check if cell[j] is in common_cells
+    # Note: common_cells may contain single-element lists like ['macrophages'] 
+    # and strings like 'serous glandular cells'. The original notebook code
+    # checks `cell in common_cells` directly, which only matches strings.
+    # We preserve this exact behavior for compatibility.
+    is_common = np.array([cell in common_cells for cell in cells])
     mask_j_common = np.broadcast_to(is_common[None, :], (m, m))
     
     # Combined masks for each penalty case
