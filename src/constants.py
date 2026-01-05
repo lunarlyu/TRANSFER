@@ -88,3 +88,58 @@ LITERATURE_POSITIVES = [
     ["FCER2", "pbmc", "b-cells", ""],
 ]
 
+# LITERATURE_POSITIVES with immune cells grouped into "immune" tissue
+# This matches the tissue naming convention used in the processed data
+# Generated automatically by run_data_processing() - do not edit manually
+# LITERATURE_POSITIVES with immune cells grouped into "immune" tissue
+# This matches the tissue naming convention used in the processed data
+# Generated automatically by run_data_processing()
+LITERATURE_POSITIVES_GROUPED = [
+    ['PECAM1', 'lung', 'endothelial cells', 'LNP'],
+    ['VCAM1', 'vascular', 'endothelial cells', 'LNP'],
+    ['CD4', 'immune', 't-cells', 'LNP'],
+    ['CD5', 'immune', 't-cells', 'LNP'],
+    ['CD19', 'immune', 'b-cells', 'LNP'],
+    ['CD3', 'immune', 't-cells', 'LNP'],
+    ['NCR1', 'immune', 'nk-cells', 'LNP'],
+    ['CD14', 'immune', 'macrophages', 'LNP'],
+    ['MRC1', 'immune', 'macrophages', 'LNP'],
+    ['ITGAM', 'immune', 'macrophages', ''],
+    ['CD28', 'immune', 't-cells', 'EDV'],
+    ['CD40', 'immune', 'b-cells', 'lenti'],
+    ['ENG', 'vascular', 'endothelial cells', 'LNP'],
+    ['MRC1', 'immune', 'dendritic cells', 'LNP'],
+    ['CD8', 'immune', 't-cells', 'LNP'],
+    ['PDPN', 'skin', 'endothelial cells', 'LNP'],
+    ['PLVAP', 'lung', 'endothelial cells', 'LNP?'],
+    ['FCER2', 'immune', 'b-cells', ''],
+]
+
+# Genes used as cutoff markers for trimming recommendations
+# Markers appearing after these genes in the ranked list are excluded
+CUTOFF_GENES = ["SIGLEC5", "PCDHGC5", "PCDHGC11"]
+
+# Cell types to exclude from final recommendations
+# These are typically low-quality or redundant cell type annotations
+EXCLUDE_CELLS = [
+    "adipose tissue fibroblasts",
+    "adipose tissue smooth muscle cells",
+    "breast adipocytes",
+    "breast breast glandular cells",
+    "breast breast myoepithelial cells",
+    "breast endothelial cells",
+    "breast smooth muscle cells",
+    "bronchus basal respiratory cells",
+    "bronchus club cells",
+    "bronchus ionocytes",
+    "bronchus smooth muscle cells",
+    "colon enteroendocrine cells",
+    "colon intestinal goblet cells",
+    "colon paneth cells",
+    "colon undifferentiated cells",
+    "endometrium glandular and luminal cells",
+    "endometrium smooth muscle cells",
+    "esophagus basal squamous epithelial cells",
+    "eye bipolar cells",
+]
+

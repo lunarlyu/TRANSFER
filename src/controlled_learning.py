@@ -16,7 +16,7 @@ from typing import Dict, List, Set, Tuple
 import numpy as np
 import pandas as pd
 
-from .constants import LITERATURE_POSITIVES
+from .constants import LITERATURE_POSITIVES_GROUPED, CUTOFF_GENES, EXCLUDE_CELLS
 from .io_utils import (
     load_tissue_cells,
     load_gene_list,
@@ -214,9 +214,9 @@ def run_grid_search(
     highly_expressed: List[int],
     gene_list: List,
     positives2: List,
-    p_range: Tuple[float, float, int] = (-2000, -100, 30),
-    q_range: Tuple[float, float, int] = (-2000, -100, 30),
-    r_range: Tuple[float, float, int] = (-1500, -20, 30),
+    p_range: Tuple[float, float, int] = (-1000, 0, 20),
+    q_range: Tuple[float, float, int] = (-1000, 0, 20),
+    r_range: Tuple[float, float, int] = (-1000, 0, 20),
     verbose: bool = True
 ) -> Tuple[Tuple[float, float, float], Dict]:
     """
@@ -296,10 +296,10 @@ def run_grid_search(
     if verbose and best_params:
         counts = results[best_params]
         print(f"  Optimal parameters: p={best_params[0]:.2f}, q={best_params[1]:.2f}, r={best_params[2]:.2f}")
-        print(f"  Organ-wide marker hits: {counts[0]}")
-        print(f"  Whole-body marker hits: {counts[1]}")
-        print(f"  Non-marker hits (penalized): {counts[2]}")
-        print(f"  Highly expressed hits (penalized): {counts[3]}")
+        print(f"  Score 1 (Organ-wide marker hits): {counts[0]}")
+        print(f"  Score 2 (Whole-body marker hits): {counts[1]}")
+        print(f"  Score 3 (Non-marker hits, penalized): {counts[2]}")
+        print(f"  Score 4 (Highly expressed hits, penalized): {counts[3]}")
         print(f"  Total score: {best_score}")
     
     return best_params, results
@@ -344,6 +344,51 @@ def recommend_markers(
         recommendations[cell_name] = [genes[idx][0] for idx in marker_indices]
     
     return recommendations
+
+
+def trim_recommendations(
+    recommendations: Dict[str, List[str]],
+    cutoff_genes: List[str] = CUTOFF_GENES,
+    exclude_cells: List[str] = EXCLUDE_CELLS
+) -> Dict[str, List[str]]:
+    """
+    Trim recommendations to only include markers before cutoff genes.
+    
+    For each cell, finds the earliest position of any cutoff gene and keeps
+    only markers that appear before that position. Removes cells with empty
+    marker lists after trimming, and excludes cells in the exclude_cells list.
+    
+    Args:
+        recommendations: Dictionary mapping cell name to marker list
+        cutoff_genes: List of genes that mark the cutoff point
+        exclude_cells: List of cell names to exclude from recommendations
+        
+    Returns:
+        Trimmed recommendations dictionary (only cells with non-empty marker lists)
+    """
+    exclude_cells_set = set(exclude_cells)
+    
+    trimmed = {}
+    for cell_name, markers in recommendations.items():
+        # Skip cells in the exclude list
+        if cell_name in exclude_cells_set:
+            continue
+        
+        # Find the earliest position of any cutoff gene
+        cutoff_pos = len(markers)  # Default to end of list
+        for cutoff_gene in cutoff_genes:
+            if cutoff_gene in markers:
+                pos = markers.index(cutoff_gene)
+                cutoff_pos = min(cutoff_pos, pos)
+        
+        # Keep only markers before the cutoff position
+        trimmed_markers = markers[:cutoff_pos]
+        
+        # Only include cells with non-empty marker lists
+        if trimmed_markers:
+            trimmed[cell_name] = trimmed_markers
+    
+    return trimmed
 
 
 def save_recommendations_csv(
@@ -477,8 +522,8 @@ def run_controlled_learning(
     medians_high = np.median(nTPM_matrix_high, axis=0)
     highly_expressed_high = np.argsort(medians_high)[-50:].tolist()
     
-    # Literature positives
-    positives2 = LITERATURE_POSITIVES
+    # Literature positives (with immune cells grouped)
+    positives2 = LITERATURE_POSITIVES_GROUPED
     
     results = {}
     
@@ -503,6 +548,12 @@ def run_controlled_learning(
     recommendations_high = recommend_markers(objective_matrix_high, tissue_cells, gene_list)
     save_recommendations_csv(recommendations_high, output_path / "recommended_whole_body_markers_high.csv")
     print(f"  Saved recommendations for {len(recommendations_high)} cell types")
+    
+    # Generate and save trimmed recommendations
+    recommendations_high_trimmed = trim_recommendations(recommendations_high)
+    
+    save_recommendations_csv(recommendations_high_trimmed, output_path / "recommended_whole_body_markers_high_trimmed.csv")
+    print(f"  Saved trimmed recommendations for {len(recommendations_high_trimmed)} cell types")
     
     results['high'] = {
         'optimal_params': best_params_high,
@@ -530,6 +581,11 @@ def run_controlled_learning(
     recommendations_median = recommend_markers(objective_matrix_median, tissue_cells, gene_list)
     save_recommendations_csv(recommendations_median, output_path / "recommended_whole_body_markers_median.csv")
     print(f"  Saved recommendations for {len(recommendations_median)} cell types")
+    
+    # Generate and save trimmed recommendations
+    recommendations_median_trimmed = trim_recommendations(recommendations_median)
+    save_recommendations_csv(recommendations_median_trimmed, output_path / "recommended_whole_body_markers_median_trimmed.csv")
+    print(f"  Saved trimmed recommendations for {len(recommendations_median_trimmed)} cell types")
     
     results['median'] = {
         'optimal_params': best_params_median,

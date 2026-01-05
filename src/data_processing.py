@@ -13,7 +13,7 @@ import csv
 import ast
 import shutil
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 import pandas as pd
 
@@ -317,7 +317,10 @@ def build_positive_labels(
         
         # Handle immune cell subtypes
         if cell in IMMUNE_SUBTYPES:
-            positives[("immune", cell)] = positive_genes
+            if ("immune", cell) in positives:
+                positives[("immune", cell)] = list[Any](set(positives[("immune", cell)] + positive_genes))
+            else:
+                positives[("immune", cell)] = positive_genes
         elif [tissue, cell] in tissue_cells:
             positives[(tissue, cell)] = positive_genes
     
