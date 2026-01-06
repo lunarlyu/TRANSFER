@@ -121,9 +121,10 @@ The pipeline also generates analysis plots in the `Plots/` directory:
   Cell Surface Marker Prediction Pipeline
 ============================================================
 
-Data directory: /path/to/Data
-Output directory: /path/to/Results
-Plots directory: /path/to/Plots
+Data directory: /Users/jren/workspace/Transfer_code/Data
+Output directory: /Users/jren/workspace/Transfer_code/Results
+Plots directory: /Users/jren/workspace/Transfer_code/Plots
+
 
 ============================================================
   STEP 1: Data Processing
@@ -132,24 +133,31 @@ Plots directory: /path/to/Plots
 === Data Processing Pipeline ===
 
 Loading surface proteins...
-  Loaded 1492 surface protein genes
+  Loaded 1443 surface protein genes
 
 Loading and cleaning expression data...
-  Cleaned data: 8247 rows
+  Cleaned data: 520983 rows
 
 Building expression matrices...
-  High method matrix: (154, 963)
-  Median method matrix: (154, 963)
+  High method matrix: (154, 965)
+  Median method matrix: (154, 965)
+
   Saved 154 tissue-cell pairs
   Saved 963 genes
 
 Loading marker databases...
+  CellMarker: 48 cells matched, 1124 markers
+  PanglaoDB: 44 cells matched, 2754 markers
+  Combined: 79 cells, 3718 markers
 
 Building positive and negative labels...
-  Positive labels: 50 cells, 558 total labels
-  Negative labels: 114 cells, 993 total labels
+  Positive labels: 49 cells, 602 total labels
+  Negative labels: 113 cells, 2545 total labels
+  Copied common_cells_across_tissues.csv to output directory
 
 === Data Processing Complete ===
+
+Data processing completed successfully.
 
 ============================================================
   STEP 2: Controlled Learning
@@ -162,38 +170,114 @@ Loading data files...
   Loaded 963 genes
 
 Loading labels...
-  Positive labels: 50 cells
-  Negative labels: 114 cells
+  Positive labels: 49 cells
+  Negative labels: 113 cells
 
 --- Processing nTPM HIGH method ---
 
 Optimizing parameters...
   Running grid search over 8000 parameter combinations...
-  Optimal parameters: p=-700.00, q=-700.00, r=-55.79
-  Organ-wide marker hits: 87
-  Whole-body marker hits: 0
-  Non-marker hits (penalized): 19
-  Highly expressed hits (penalized): 3
-  Total score: 65
+  Optimal parameters: p=0.00, q=-894.74, r=-52.63
+  Score 1 (Organ-wide marker hits): 71
+  Score 2 (Whole-body marker hits): 1
+  Score 3 (Non-marker hits, penalized): 54
+  Score 4 (Highly expressed hits, penalized): 10
+  Total score: 8
 
 Generating marker recommendations...
   Saved recommendations for 154 cell types
+  Saved trimmed recommendations for 117 cell types
+
+--- Processing nTPM MEDIAN method ---
+
+Optimizing parameters...
+  Running grid search over 8000 parameter combinations...
+  Optimal parameters: p=0.00, q=-1000.00, r=-52.63
+  Score 1 (Organ-wide marker hits): 90
+  Score 2 (Whole-body marker hits): 2
+  Score 3 (Non-marker hits, penalized): 66
+  Score 4 (Highly expressed hits, penalized): 6
+  Total score: 20
+
+Generating marker recommendations...
+  Saved recommendations for 154 cell types
+  Saved trimmed recommendations for 120 cell types
 
 === Controlled Learning Complete ===
 
+Controlled learning completed successfully.
+
 ============================================================
-  STEP 3: Plot Generation
+  STEP 3: Generate Plots and Analysis
 ============================================================
 
+
+============================================================
 GENERATING PLOTS AND ANALYSIS
-  Saved: topmarkers_withinCell_high.png
+============================================================
+
+Loading data...
+  Loaded 154 tissue-cell pairs
+  Loaded 963 genes
+
+Analyzing HIGH method results...
+  Within-cell analysis (high):
+    Rank distribution: [57, 28, 17, 4, 48]
+    Total cells: 154
   Saved: top1marker_high.xlsx
   Saved: top10marker_high.xlsx
   Saved: top2_10marker_high.xlsx
 
+Analyzing MEDIAN method results...
+  Within-cell analysis (median):
+    Rank distribution: [47, 35, 11, 8, 53]
+    Total cells: 154
+  Saved: top1marker_median.xlsx
+  Saved: top10marker_median.xlsx
+  Saved: top2_10marker_median.xlsx
+
+============================================================
+Plots and analysis saved to: /Users/jren/workspace/Transfer_code/Plots
+============================================================
+Plot generation completed successfully.
+
 ============================================================
   Pipeline Complete
 ============================================================
+
+Output files generated:
+  ✓ gene_expression_matrix_high.csv (664.8 KB)
+  ✓ gene_expression_matrix_median.csv (733.5 KB)
+  ✓ tissue_cell_pairs.tsv (4.0 KB)
+  ✓ gene_list.csv (5.9 KB)
+  ✓ positives_labels.csv (6.4 KB)
+  ✓ negative_labels.csv (25.1 KB)
+  ✓ recommended_whole_body_markers_high.csv (18.8 KB)
+  ✓ recommended_whole_body_markers_median.csv (19.0 KB)
+
+Plot files (in Plots/):
+  ✓ top10marker_high.xlsx (8.5 KB)
+  ✓ top10marker_median.xlsx (8.5 KB)
+  ✓ top1marker_high.xlsx (8.8 KB)
+  ✓ top1marker_median.xlsx (8.8 KB)
+  ✓ top2_10marker_high.xlsx (8.9 KB)
+  ✓ top2_10marker_median.xlsx (8.9 KB)
+  ✓ topmarkers_withinCell_high.png (41.0 KB)
+  ✓ topmarkers_withinCell_median.png (42.1 KB)
+
+============================================================
+  Results Summary
+============================================================
+
+HIGH method optimal parameters:
+  p = 0.00
+  q = -894.74
+  r = -52.63
+
+MEDIAN method optimal parameters:
+  p = 0.00
+  q = -1000.00
+  r = -52.63
 ```
 
 ### Expected Run Time
