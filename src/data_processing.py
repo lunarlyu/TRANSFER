@@ -318,7 +318,7 @@ def build_positive_labels(
         # Handle immune cell subtypes
         if cell in IMMUNE_SUBTYPES:
             if ("immune", cell) in positives:
-                positives[("immune", cell)] = list[Any](set(positives[("immune", cell)] + positive_genes))
+                positives[("immune", cell)] = list(set(positives[("immune", cell)] + positive_genes))
             else:
                 positives[("immune", cell)] = positive_genes
         elif [tissue, cell] in tissue_cells:
